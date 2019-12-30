@@ -1,0 +1,2 @@
+ragel -C sample.rl -o sample.cpp && g++ -w sample.cpp -o sample && ./sample ab12cdagab43cddas | less
+ragel -V sample.rl > sample.gv  && dot -Tpng sample.gv -o sample.png && display sample.png
