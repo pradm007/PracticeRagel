@@ -1,2 +1,11 @@
-ragel -C sample.rl -o sample.cpp && g++ -w sample.cpp -o sample && ./sample ab12cdagab43cddas | less
+
+# Master Test Case
+Input Stream -> g3dab32cd3dab5cdab76cd
+Pattern -> ab[0-9]cd
+
+# Execute ragel code
+1. ragel -C sample.rl -o sample.cpp && g++ -w sample.cpp -o sample && ./sample ab12cdagab43cddas | less
+2. ragel -C sample.rl -o sample.cpp && g++ -w sample.cpp -o sample && ./sample g3dab32cd3dab5cdab76cd | less
+
+# To generate transition figure
 ragel -V sample.rl > sample.gv  && dot -Tpng sample.gv -o sample.png && display sample.png
