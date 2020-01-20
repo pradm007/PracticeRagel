@@ -13,24 +13,14 @@ int main( int argc, char **argv )
 	if ( argc > 1 ) {
 		char *p = argv[1];
 		cs = foo_start;
-		char *eof;// = p + strlen(p);
+		char *eof;
 		printf("Input is %s \n",p);
 		vector<int> temp_numbersInPattern;
 		printf("cs is %d and foo_start is %d\n", cs, foo_start);
 
 		%%{
-			action CHUNK1 {
-				// printf("Match happened. for CHUNK1\n");
-				cout << "Last match element was " << (char) fc << endl;
-			}
-
-			action CHUNK2 {
-				// printf("Match happened. for CHUNK2\n");
-				cout << "Last match element was " << (char) fc << endl;
-			}
-
+			
 			action CHUNK {
-				// printf("Match happened. for CHUNK2\n");
 				cout << "Element -> " << (char) fc << endl;
 			}
 
@@ -59,29 +49,21 @@ int main( int argc, char **argv )
 				res = 0;
 				printf("Error happened.\n");
 				cs = foo_start;
-				// cs = fentry(main);
 				printf("cs is %d and foo_start is %d\n", cs, foo_start);
 
 				temp_numbersInPattern.clear();
+
 				if (fc == 'X') {
+					// Force break... very bad practice
 					cout << "Trying to break "<< endl;
 					fbreak;
 				}
-				// fhold;
-				// fgoto line;
-				// fgoto main;
-				// return foo_start;
+				
 			}
-			 # line := any* @{ fgoto main; };
 
 			pattern = ((('ab'([0-9]+ $from(NUM))'cd')+) $to(CHUNK) %to(A) $lerr(E));
 			main := pattern;
 		
-			#main := ((('ab'([1234]+ $from(NUM))'cd')+) $to(CHUNK) %to(A) <^(E));# %to(NUM) <^(E);
-			 # main := /ab[0-9]cd/ %to(A);
-			 # main := ( ('a'([0-9]+)'c')+ ) $to(CHUNK) %to(A);
-			# main := ((('ab') ([0-9]+ $from(NUM)) ('cd'))+)* %to(A) <>^(E);
-			# main := (((('a'+)'b')+)+) %to(A) <>^(E);
 			write init nocs;
 			write exec noend;
 		}%%
@@ -91,7 +73,6 @@ int main( int argc, char **argv )
 	}
 
 
-	// printf("input is %s\n", argv[1]);
 	printf("Pattern matched %d times\n", res);
 	if (DEBUG == 2) {
 		cout << "Numbers in the list are " << endl;
