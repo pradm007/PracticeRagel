@@ -20,7 +20,7 @@ int main(int argc, char **argv) {
 
   char *input = "";
   if (FILEINPUT) {
-    ifstream myfile("../Benchmark/Synthetic/trace2.txt");
+    ifstream myfile("../Benchmark/Synthetic/trace5.txt");
     string inp;
     if (myfile.is_open()) {
       while (getline(myfile, inp)) {

@@ -19,3 +19,6 @@ ragel -C sample.rl -o sample.cpp
 ## Linking and loading .SO file
 - g++ -w mainFile.cpp -ldl -o mainFile
 Add -fpermissive to convert errors to warning. Use with caution.
+
+## For Debugging purpose
+- g++ -w mainFile.cpp -ldl -o mainFile && ./mainFile | less
