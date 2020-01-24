@@ -50,3 +50,7 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# Trace files
+Benchmark/Synthetic/trace4.txt
+Benchmark/Synthetic/trace5.txt
