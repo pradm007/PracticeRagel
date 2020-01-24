@@ -3,7 +3,7 @@
 
 #include <bits/stdc++.h>
 using namespace std;
-#define DEBUG 2
+#define DEBUG 1
 
 
 #line 7 "sample.rl"
@@ -15,53 +15,53 @@ static const char _foo_actions[] = {
 };
 
 static const char _foo_key_offsets[] = {
-	0, 0, 1, 2, 4, 7, 8
+	0, 0, 2, 4, 8
 };
 
 static const char _foo_trans_keys[] = {
-	97, 98, 48, 57, 99, 48, 57, 100, 
-	97, 0
+	97, 100, 48, 57, 48, 57, 97, 100, 
+	97, 100, 0
 };
 
 static const char _foo_single_lengths[] = {
-	0, 1, 1, 0, 1, 1, 1
+	0, 0, 0, 0, 0
 };
 
 static const char _foo_range_lengths[] = {
-	0, 0, 0, 1, 1, 0, 0
+	0, 1, 1, 2, 1
 };
 
 static const char _foo_index_offsets[] = {
-	0, 0, 2, 4, 6, 9, 11
+	0, 0, 2, 4, 7
 };
 
 static const char _foo_indicies[] = {
-	1, 0, 2, 0, 3, 0, 4, 3, 
-	0, 5, 0, 1, 0, 0
+	1, 0, 2, 0, 2, 3, 0, 1, 
+	0, 0
 };
 
 static const char _foo_trans_targs[] = {
-	0, 2, 3, 4, 5, 6
+	0, 2, 3, 4
 };
 
 static const char _foo_trans_actions[] = {
-	5, 0, 0, 0, 0, 0
+	5, 0, 0, 0
 };
 
 static const char _foo_to_state_actions[] = {
-	0, 1, 1, 1, 1, 1, 7
+	0, 1, 1, 1, 7
 };
 
 static const char _foo_from_state_actions[] = {
-	0, 0, 0, 3, 3, 0, 0
+	0, 0, 3, 3, 0
 };
 
 static const char _foo_eof_actions[] = {
-	0, 5, 5, 5, 5, 5, 0
+	0, 5, 5, 5, 0
 };
 
 static const int foo_start = 1;
-static const int foo_first_final = 6;
+static const int foo_first_final = 4;
 static const int foo_error = 0;
 
 static const int foo_en_main = 1;
@@ -74,8 +74,13 @@ int main( int argc, char **argv )
 	int totalLength = 0, currentLength = 0;
 	vector<int> numbersInPattern;
 	vector<vector<int> > numberList;	
-	if ( argc > 1 ) {
-		char *p = argv[1];
+	// if ( argc > 1 ) {
+		char *p = (char *)malloc(INT_MAX * sizeof(char *));
+		if (argc >= 2) {
+			p = argv[1];
+		} else {
+			scanf("%s",p);
+		}
 		cs = foo_start;
 		totalLength = strlen(p);
 		char *eof;
@@ -84,11 +89,11 @@ int main( int argc, char **argv )
 		printf("cs is %d and foo_start is %d\n", cs, foo_start);
 
 		
-#line 88 "sample.cpp"
+#line 93 "sample.cpp"
 	{
 	}
 
-#line 92 "sample.cpp"
+#line 97 "sample.cpp"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -104,7 +109,7 @@ _resume:
 	while ( _nacts-- > 0 ) {
 		switch ( *_acts++ ) {
 	case 2:
-#line 44 "sample.rl"
+#line 51 "sample.rl"
 	{
 				// printf("fc =%c \n",fc);
 				if ((*p) >= 48 && (*p) <= 57) {
@@ -113,7 +118,7 @@ _resume:
 				}
 			}
 	break;
-#line 117 "sample.cpp"
+#line 122 "sample.cpp"
 		}
 	}
 
@@ -179,24 +184,25 @@ _match:
 		switch ( *_acts++ )
 		{
 	case 3:
-#line 51 "sample.rl"
+#line 58 "sample.rl"
 	{
-				res = 0;
+				// res = 0;
 				printf("Error happened.\n");
 				cs = foo_start;
 				printf("cs is %d and foo_start is %d\n", cs, foo_start);
+				printf("currentLength is %d and totalLength is %d\n", currentLength, totalLength);
 
 				temp_numbersInPattern.clear();
-
-				if (currentLength == totalLength) {
+				if (currentLength >= totalLength) {
 					// Force break... very bad practice
 					cout << "Trying to break "<< endl;
 					{p++; goto _out; }
 				}
+				// fgoto main;
 				
 			}
 	break;
-#line 200 "sample.cpp"
+#line 206 "sample.cpp"
 		}
 	}
 
@@ -206,18 +212,18 @@ _again:
 	while ( _nacts-- > 0 ) {
 		switch ( *_acts++ ) {
 	case 0:
-#line 25 "sample.rl"
+#line 30 "sample.rl"
 	{
 				cout << "Element -> " << (char) (*p) << endl;
 				currentLength++;
 			}
 	break;
 	case 1:
-#line 30 "sample.rl"
+#line 35 "sample.rl"
 	{
 				res++;
 				printf("ACTUAL Match happened.\n");
-				if (DEBUG == 2) {
+				if (DEBUG) {
 					for (int i=0 ;i< temp_numbersInPattern.size(); i++) {
 						cout << temp_numbersInPattern[i] << " ~ ";
 						numbersInPattern.push_back(temp_numbersInPattern[i]);
@@ -227,9 +233,11 @@ _again:
 					numbersInPattern.clear();
 					temp_numbersInPattern.clear();
 				}
+				cs = foo_start;
+				p--;
 			}
 	break;
-#line 233 "sample.cpp"
+#line 241 "sample.cpp"
 		}
 	}
 
@@ -244,24 +252,25 @@ _again:
 	while ( __nacts-- > 0 ) {
 		switch ( *__acts++ ) {
 	case 3:
-#line 51 "sample.rl"
+#line 58 "sample.rl"
 	{
-				res = 0;
+				// res = 0;
 				printf("Error happened.\n");
 				cs = foo_start;
 				printf("cs is %d and foo_start is %d\n", cs, foo_start);
+				printf("currentLength is %d and totalLength is %d\n", currentLength, totalLength);
 
 				temp_numbersInPattern.clear();
-
-				if (currentLength == totalLength) {
+				if (currentLength >= totalLength) {
 					// Force break... very bad practice
 					cout << "Trying to break "<< endl;
 					{p++; goto _out; }
 				}
+				// fgoto main;
 				
 			}
 	break;
-#line 265 "sample.cpp"
+#line 274 "sample.cpp"
 		}
 	}
 	}
@@ -269,16 +278,16 @@ _again:
 	_out: {}
 	}
 
-#line 72 "sample.rl"
+#line 87 "sample.rl"
 
 
 		cout << "Finished processing \n\n";
 		
-	}
+	// }
 
 
 	printf("Pattern matched %d times\n", res);
-	if (DEBUG == 2) {
+	if (DEBUG) {
 		cout << "Numbers in the list are " << endl;
 		for (int i =0; i < numberList.size(); i++) {
 			cout << "List " << i+1 << " : " << endl;
