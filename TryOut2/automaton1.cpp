@@ -77,18 +77,18 @@ static const int foo_en_main = 1;
 
 
 #line 17 "automaton1.rl"
-
-void mine_pattern() {
+extern "C" {void mine_pattern(char *p);}
+void mine_pattern(char *p) {
 
     if (DEBUG) {
         printf("\tInside actual mining. Mining starts now for pattern lookup.\n");
     }
 
-    char *p = (char *)malloc(INT_MAX * sizeof(char *));
+    // char *p = (char *)malloc(INT_MAX * sizeof(char *));
     // if (DEBUG) {
-        printf("Enter input string \n");
+        // printf("Enter input string \n");
     // }
-    scanf("%s",p);
+    // scanf("%s",p);
 
     int cs, res = 0;
     int totalLength = 0, currentLength = 0;
@@ -326,11 +326,11 @@ _again:
 
 }
 
-int main() {
-    // mine_pattern("a111b222c");
-    mine_pattern();
-    return 0;
-}
+// int main() {
+//     // mine_pattern("a111b222c");
+//     mine_pattern();
+//     return 0;
+// }
 
 // ParserAutomaton::ParserAutomaton() {
 // }
