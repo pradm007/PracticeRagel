@@ -4,7 +4,8 @@
 // #include "automaton.h"
 #include <bits/stdc++.h>
 // #include <stdio.h>
-#define DEBUG 1
+#define DEBUG 0
+#define PRINT_LIST 0
 
 /**
 * @file Temporary file. DO NOT MODIFY
@@ -15,9 +16,9 @@
 
 using namespace std;
 
-#line 16 "automaton1.rl"
+#line 17 "automaton1.rl"
 
-#line 21 "automaton1.cpp"
+#line 22 "automaton1.cpp"
 static const char _foo_actions[] = {
 	0, 1, 0, 1, 2, 1, 3, 2, 
 	0, 1
@@ -76,7 +77,7 @@ static const int foo_error = 0;
 static const int foo_en_main = 1;
 
 
-#line 17 "automaton1.rl"
+#line 18 "automaton1.rl"
 extern "C" {void mine_pattern(char *p);}
 void mine_pattern(char *p) {
 
@@ -102,11 +103,11 @@ void mine_pattern(char *p) {
     vector<int> temp_numbersInPattern;
 
     
-#line 106 "automaton1.cpp"
+#line 107 "automaton1.cpp"
 	{
 	}
 
-#line 110 "automaton1.cpp"
+#line 111 "automaton1.cpp"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -122,7 +123,7 @@ _resume:
 	while ( _nacts-- > 0 ) {
 		switch ( *_acts++ ) {
 	case 2:
-#line 70 "automaton1.rl"
+#line 71 "automaton1.rl"
 	{
             // printf("fc =%c \n",fc);
             if ((*p) >= 48 && (*p) <= 57) {
@@ -131,7 +132,7 @@ _resume:
             }
         }
 	break;
-#line 135 "automaton1.cpp"
+#line 136 "automaton1.cpp"
 		}
 	}
 
@@ -197,7 +198,7 @@ _match:
 		switch ( *_acts++ )
 		{
 	case 3:
-#line 77 "automaton1.rl"
+#line 78 "automaton1.rl"
 	{
             //res = 0;
             if (DEBUG) {
@@ -221,7 +222,7 @@ _match:
             }
         }
 	break;
-#line 225 "automaton1.cpp"
+#line 226 "automaton1.cpp"
 		}
 	}
 
@@ -231,7 +232,7 @@ _again:
 	while ( _nacts-- > 0 ) {
 		switch ( *_acts++ ) {
 	case 0:
-#line 43 "automaton1.rl"
+#line 44 "automaton1.rl"
 	{
             if (DEBUG) {
                 // cout << "Element -> " << (char) fc << endl;
@@ -241,10 +242,10 @@ _again:
         }
 	break;
 	case 1:
-#line 51 "automaton1.rl"
+#line 52 "automaton1.rl"
 	{
             res++;
-            printf("Match happened.\n");
+            // printf("Match happened.\n");
             for (int i=0 ;i< temp_numbersInPattern.size(); i++) {
                 if (DEBUG) {
                     printf("%d ~ ", temp_numbersInPattern[i]);
@@ -262,7 +263,7 @@ _again:
             p--;
         }
 	break;
-#line 266 "automaton1.cpp"
+#line 267 "automaton1.cpp"
 		}
 	}
 
@@ -277,7 +278,7 @@ _again:
 	while ( __nacts-- > 0 ) {
 		switch ( *__acts++ ) {
 	case 3:
-#line 77 "automaton1.rl"
+#line 78 "automaton1.rl"
 	{
             //res = 0;
             if (DEBUG) {
@@ -301,7 +302,7 @@ _again:
             }
         }
 	break;
-#line 305 "automaton1.cpp"
+#line 306 "automaton1.cpp"
 		}
 	}
 	}
@@ -309,11 +310,11 @@ _again:
 	_out: {}
 	}
 
-#line 104 "automaton1.rl"
+#line 105 "automaton1.rl"
 
 
     printf("Pattern matched %d times\n", res);
-    if (numberList.size() > 0) {
+    if (numberList.size() > 0 && PRINT_LIST) {
         printf("Numbers in the list are \n");
         for (int i =0; i < numberList.size(); i++) {
             printf("List %d : \n", i+1);

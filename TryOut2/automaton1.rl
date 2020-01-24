@@ -2,7 +2,8 @@
 // #include "automaton.h"
 #include <bits/stdc++.h>
 // #include <stdio.h>
-#define DEBUG 1
+#define DEBUG 0
+#define PRINT_LIST 0
 
 /**
 * @file Temporary file. DO NOT MODIFY
@@ -50,7 +51,7 @@ void mine_pattern(char *p) {
 
         action A {
             res++;
-            printf("Match happened.\n");
+            // printf("Match happened.\n");
             for (int i=0 ;i< temp_numbersInPattern.size(); i++) {
                 if (DEBUG) {
                     printf("%d ~ ", temp_numbersInPattern[i]);
@@ -104,7 +105,7 @@ void mine_pattern(char *p) {
     }%%
 
     printf("Pattern matched %d times\n", res);
-    if (numberList.size() > 0) {
+    if (numberList.size() > 0 && PRINT_LIST) {
         printf("Numbers in the list are \n");
         for (int i =0; i < numberList.size(); i++) {
             printf("List %d : \n", i+1);

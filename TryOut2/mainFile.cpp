@@ -5,7 +5,7 @@
 #include <dlfcn.h>
 using namespace std;
 
-#define FILEINPUT 0
+#define FILEINPUT 1
 
 int main(int argc, char **argv) {
 
@@ -20,7 +20,16 @@ int main(int argc, char **argv) {
 
   char *input = "";
   if (FILEINPUT) {
-
+    ifstream myfile("../Benchmark/Synthetic/trace2.txt");
+    string inp;
+    if (myfile.is_open()) {
+      while (getline(myfile, inp)) {
+        // cout << line << '\n';
+      }
+      myfile.close();
+    }
+    input = (char *)malloc((inp.size() + 1) * sizeof(char *));
+    strcpy(input, inp.c_str());
   } else if (argc > 1) {
     input = argv[1];
   } else {
@@ -30,18 +39,20 @@ int main(int argc, char **argv) {
   }
 
   if (input != NULL && !string(input).empty()) {
-    cout << "Input is " << input;
+    clock_t start = clock();
+    // cout << "Input is " << input << endl;
     // ParserAutomaton* (*f)() = (ParserAutomaton* (*)())dlsym(lib,
     // "createParserAutomaton");
     void (*f)(char *);
     f = (void (*)(char *))dlsym(lib, "mine_pattern");
     if (f) {
-      // cout << "Address " << f << endl;
       f(input);
     } else {
       printf("dlsym for f1 failed: %s\n", dlerror());
     }
-
+    clock_t end = clock();
+    clock_t tot_Time = end - start;
+    printf("Trace completed in %lf sec\n", ((float)tot_Time) / CLOCKS_PER_SEC);
     // ParserAutomaton *p = new ParserAutomaton();
     // char *str = argv[1];
     // p->mine_pattern("a1b");
