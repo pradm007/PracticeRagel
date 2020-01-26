@@ -14,59 +14,74 @@ int _tempPatternListIndex = 0;
 
 #line 16 "sample.cpp"
 static const char _foo_actions[] = {
-	0, 1, 0, 1, 2, 1, 3, 2, 
-	0, 1
+	0, 1, 0, 1, 2, 1, 3, 1, 
+	4, 2, 0, 1
 };
 
 static const char _foo_key_offsets[] = {
-	0, 0, 2, 4, 7, 9, 12
+	0, 0, 4, 6, 9, 11, 14, 16, 
+	19, 21, 24, 26, 29, 31, 34
 };
 
 static const char _foo_trans_keys[] = {
-	97, 98, 48, 57, 98, 48, 57, 48, 
-	57, 97, 48, 57, 97, 98, 0
+	97, 98, 99, 100, 48, 57, 98, 48, 
+	57, 48, 57, 99, 48, 57, 48, 57, 
+	100, 48, 57, 48, 57, 101, 48, 57, 
+	48, 57, 101, 48, 57, 48, 57, 97, 
+	48, 57, 97, 98, 99, 100, 0
 };
 
 static const char _foo_single_lengths[] = {
-	0, 2, 0, 1, 0, 1, 2
+	0, 4, 0, 1, 0, 1, 0, 1, 
+	0, 1, 0, 1, 0, 1, 4
 };
 
 static const char _foo_range_lengths[] = {
-	0, 0, 1, 1, 1, 1, 0
+	0, 0, 1, 1, 1, 1, 1, 1, 
+	1, 1, 1, 1, 1, 1, 0
 };
 
 static const char _foo_index_offsets[] = {
-	0, 0, 3, 5, 8, 10, 13
+	0, 0, 5, 7, 10, 12, 15, 17, 
+	20, 22, 25, 27, 30, 32, 35
 };
 
 static const char _foo_indicies[] = {
-	1, 2, 0, 3, 0, 4, 3, 0, 
-	5, 0, 4, 5, 0, 1, 2, 0, 
+	1, 2, 3, 4, 0, 5, 0, 6, 
+	5, 0, 7, 0, 6, 7, 0, 8, 
+	0, 9, 8, 0, 10, 0, 6, 10, 
+	0, 11, 0, 12, 11, 0, 13, 0, 
+	6, 13, 0, 1, 2, 3, 4, 0, 
 	0
 };
 
 static const char _foo_trans_targs[] = {
-	0, 2, 4, 3, 6, 5
+	0, 2, 4, 6, 10, 3, 14, 5, 
+	7, 8, 9, 11, 12, 13
 };
 
 static const char _foo_trans_actions[] = {
-	5, 0, 0, 0, 0, 0
+	7, 0, 0, 0, 0, 0, 0, 0, 
+	0, 0, 0, 0, 0, 0
 };
 
 static const char _foo_to_state_actions[] = {
-	0, 1, 1, 1, 1, 1, 7
+	0, 1, 1, 1, 1, 1, 1, 1, 
+	1, 1, 1, 1, 1, 1, 9
 };
 
 static const char _foo_from_state_actions[] = {
-	0, 0, 3, 3, 3, 3, 0
+	0, 0, 3, 3, 3, 3, 3, 3, 
+	5, 5, 5, 5, 3, 3, 0
 };
 
 static const char _foo_eof_actions[] = {
-	0, 5, 5, 5, 5, 5, 0
+	0, 7, 7, 7, 7, 7, 7, 7, 
+	7, 7, 7, 7, 7, 7, 0
 };
 
 static const int foo_start = 1;
-static const int foo_first_final = 6;
+static const int foo_first_final = 14;
 static const int foo_error = 0;
 
 static const int foo_en_main = 1;
@@ -170,11 +185,11 @@ void mine_pattern(char *p) {
 	printf("cs is %d and foo_start is %d\n", cs, foo_start);
 
 	
-#line 174 "sample.cpp"
+#line 189 "sample.cpp"
 	{
 	}
 
-#line 178 "sample.cpp"
+#line 193 "sample.cpp"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -200,7 +215,18 @@ _resume:
             }
         }
 	break;
-#line 204 "sample.cpp"
+	case 3:
+#line 150 "sample.rl"
+	{
+            // printf("fc =%c \n",fc);
+            if ((*p) >= 48 && (*p) <= 57) {
+                // printf("Skipping Num =%c \n",fc);
+                // temp_numbersInPattern.push_back( (char) (fc-48));
+				// _tempPatternListIndex = 1;
+            }
+        }
+	break;
+#line 230 "sample.cpp"
 		}
 	}
 
@@ -265,8 +291,8 @@ _match:
 	{
 		switch ( *_acts++ )
 		{
-	case 3:
-#line 150 "sample.rl"
+	case 4:
+#line 158 "sample.rl"
 	{
             //res = 0;
             if (DEBUG) {
@@ -290,7 +316,7 @@ _match:
             }
         }
 	break;
-#line 294 "sample.cpp"
+#line 320 "sample.cpp"
 		}
 	}
 
@@ -336,7 +362,7 @@ _again:
             p--;
         }
 	break;
-#line 340 "sample.cpp"
+#line 366 "sample.cpp"
 		}
 	}
 
@@ -350,8 +376,8 @@ _again:
 	unsigned int __nacts = (unsigned int) *__acts++;
 	while ( __nacts-- > 0 ) {
 		switch ( *__acts++ ) {
-	case 3:
-#line 150 "sample.rl"
+	case 4:
+#line 158 "sample.rl"
 	{
             //res = 0;
             if (DEBUG) {
@@ -375,7 +401,7 @@ _again:
             }
         }
 	break;
-#line 379 "sample.cpp"
+#line 405 "sample.cpp"
 		}
 	}
 	}
@@ -383,7 +409,7 @@ _again:
 	_out: {}
 	}
 
-#line 186 "sample.rl"
+#line 194 "sample.rl"
 
 
 	cout << "Finished processing \n\n";
