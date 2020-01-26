@@ -6,94 +6,175 @@ using namespace std;
 #define DEBUG 1
 
 
-#line 7 "sample.rl"
+const string numberListPattern = "[0-9]+";
+int _tempPatternListIndex = 0;
 
-#line 12 "sample.cpp"
+
+#line 11 "sample.rl"
+
+#line 16 "sample.cpp"
 static const char _foo_actions[] = {
 	0, 1, 0, 1, 2, 1, 3, 2, 
 	0, 1
 };
 
 static const char _foo_key_offsets[] = {
-	0, 0, 2, 4, 8
+	0, 0, 2, 4, 7, 9, 12
 };
 
 static const char _foo_trans_keys[] = {
-	97, 100, 48, 57, 48, 57, 97, 100, 
-	97, 100, 0
+	97, 98, 48, 57, 98, 48, 57, 48, 
+	57, 97, 48, 57, 97, 98, 0
 };
 
 static const char _foo_single_lengths[] = {
-	0, 0, 0, 0, 0
+	0, 2, 0, 1, 0, 1, 2
 };
 
 static const char _foo_range_lengths[] = {
-	0, 1, 1, 2, 1
+	0, 0, 1, 1, 1, 1, 0
 };
 
 static const char _foo_index_offsets[] = {
-	0, 0, 2, 4, 7
+	0, 0, 3, 5, 8, 10, 13
 };
 
 static const char _foo_indicies[] = {
-	1, 0, 2, 0, 2, 3, 0, 1, 
-	0, 0
+	1, 2, 0, 3, 0, 4, 3, 0, 
+	5, 0, 4, 5, 0, 1, 2, 0, 
+	0
 };
 
 static const char _foo_trans_targs[] = {
-	0, 2, 3, 4
+	0, 2, 4, 3, 6, 5
 };
 
 static const char _foo_trans_actions[] = {
-	5, 0, 0, 0
+	5, 0, 0, 0, 0, 0
 };
 
 static const char _foo_to_state_actions[] = {
-	0, 1, 1, 1, 7
+	0, 1, 1, 1, 1, 1, 7
 };
 
 static const char _foo_from_state_actions[] = {
-	0, 0, 3, 3, 0
+	0, 0, 3, 3, 3, 3, 0
 };
 
 static const char _foo_eof_actions[] = {
-	0, 5, 5, 5, 0
+	0, 5, 5, 5, 5, 5, 0
 };
 
 static const int foo_start = 1;
-static const int foo_first_final = 4;
+static const int foo_first_final = 6;
 static const int foo_error = 0;
 
 static const int foo_en_main = 1;
 
 
-#line 8 "sample.rl"
-int main( int argc, char **argv )
-{
+#line 12 "sample.rl"
+
+string getString(char ch) { 
+	string temp = "";
+    return "" + ch;    
+} 
+
+void insertIntoTempPatternList(vector<string>  &tempPatternList, char element, int where) {
+	switch(where) {
+		case 0:
+			if (tempPatternList.empty()) { //completely empty. This happens in the first match
+				string temp = "";
+				temp.push_back((char) element);
+				tempPatternList.push_back(temp);
+			} else {
+				tempPatternList[where].push_back((char) element);
+			}
+
+		break;
+		case 1:
+			if (tempPatternList.size() == where) { //no new element in the 2nd index
+				string temp = "";
+				temp.push_back((char) element);
+				tempPatternList.push_back(temp);
+			} else {
+				tempPatternList[where].push_back((char) element);
+			}
+
+		break;
+	};
+}
+
+void insertIntoPatternList(map<string, vector<vector<int> > > &patternMap, vector<string>  &tempPatternList, vector<vector<int> > &numberList) {
+	string fullPattern = "";
+
+	for (int i=0;i<tempPatternList.size();i++) {
+		fullPattern += tempPatternList[i];
+		if (tempPatternList.size()-1 > i) {
+			fullPattern += numberListPattern;
+		}
+	}
+
+	vector<vector<int> >  newNumberList = numberList;
+
+	const bool is_in = patternMap.find(fullPattern) != patternMap.end();
+	if (is_in) {
+		cout << "Found " << fullPattern << endl;
+		auto itr = patternMap.find(fullPattern);
+		vector<vector<int> >  oldNumberList = itr->second;
+		for (int j=0;j<newNumberList.size();j++) {
+			oldNumberList.push_back(newNumberList[j]);
+		}
+		patternMap[itr->first] = oldNumberList;
+	} else {
+		cout << "Did not find " << fullPattern << " thus inserting new " << endl;
+		patternMap.emplace(fullPattern, newNumberList);
+	}
+
+}
+
+void resetPatternList(vector<string> &tempPatternList) {
+	_tempPatternListIndex = 0;
+	tempPatternList.clear();
+}
+
+void displayPatternList(map<string, vector<vector<int> > > &patternMap) {
+	for (auto itr = patternMap.begin(); itr != patternMap.end(); itr++) {
+		string pattern = "" + (string) itr->first;
+		cout << pattern << " :\n";
+		vector<vector<int> > numberList = itr->second;	
+		for (int i =0; i < numberList.size(); i++) {
+			printf("\tList %d : \n\t\t\t", i+1);
+			for (int j=0;j<numberList[i].size(); j++) {
+				printf("%d ",numberList[i][j]);
+			}
+			printf("\n");
+		}
+
+	}
+}
+
+void mine_pattern(char *p) {
 	int cs, res = 0;
 	int totalLength = 0, currentLength = 0;
 	vector<int> numbersInPattern;
 	vector<vector<int> > numberList;	
-	// if ( argc > 1 ) {
-		char *p = (char *)malloc(INT_MAX * sizeof(char *));
-		if (argc >= 2) {
-			p = argv[1];
-		} else {
-			scanf("%s",p);
-		}
-		cs = foo_start;
-		totalLength = strlen(p);
-		char *eof;
-		printf("Input is %s \n",p);
-		vector<int> temp_numbersInPattern;
-		printf("cs is %d and foo_start is %d\n", cs, foo_start);
+	vector<string> tempPatternList;
 
-		
-#line 93 "sample.cpp"
+	map<string, vector<vector<int> > > patternMap;
+
+	cs = foo_start;
+	totalLength = strlen(p);
+	char *eof;
+	printf("Input is %s \n",p);
+	vector<int> temp_numbersInPattern;
+	printf("cs is %d and foo_start is %d\n", cs, foo_start);
+
+	
+#line 174 "sample.cpp"
 	{
 	}
 
-#line 97 "sample.cpp"
+#line 178 "sample.cpp"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -109,16 +190,17 @@ _resume:
 	while ( _nacts-- > 0 ) {
 		switch ( *_acts++ ) {
 	case 2:
-#line 51 "sample.rl"
+#line 142 "sample.rl"
 	{
-				// printf("fc =%c \n",fc);
-				if ((*p) >= 48 && (*p) <= 57) {
-					// printf("\tNum =%c \n",fc);
-					temp_numbersInPattern.push_back( (char) ((*p)-48));
-				}
-			}
+            // printf("fc =%c \n",fc);
+            if ((*p) >= 48 && (*p) <= 57) {
+                // printf("	Num =%c \n",fc);
+                temp_numbersInPattern.push_back( (char) ((*p)-48));
+				_tempPatternListIndex = 1;
+            }
+        }
 	break;
-#line 122 "sample.cpp"
+#line 204 "sample.cpp"
 		}
 	}
 
@@ -184,25 +266,31 @@ _match:
 		switch ( *_acts++ )
 		{
 	case 3:
-#line 58 "sample.rl"
+#line 150 "sample.rl"
 	{
-				// res = 0;
-				printf("Error happened.\n");
-				cs = foo_start;
-				printf("cs is %d and foo_start is %d\n", cs, foo_start);
-				printf("currentLength is %d and totalLength is %d\n", currentLength, totalLength);
+            //res = 0;
+            if (DEBUG) {
+                printf("Error happened.\n");
+            }
+            cs = foo_start;
+            if (DEBUG) {
+                printf("cs is %d and foo_start is %d\n", cs, foo_start);
+            }
 
-				temp_numbersInPattern.clear();
-				if (currentLength >= totalLength) {
-					// Force break... very bad practice
-					cout << "Trying to break "<< endl;
-					{p++; goto _out; }
-				}
-				// fgoto main;
-				
-			}
+			numberList.clear();
+            temp_numbersInPattern.clear();
+			resetPatternList(tempPatternList);
+
+            if (currentLength >= totalLength) {
+                // Force break... very bad practice
+                if (DEBUG) {
+                    cout << "Trying to break "<< endl;
+                }
+                {p++; goto _out; }
+            }
+        }
 	break;
-#line 206 "sample.cpp"
+#line 294 "sample.cpp"
 		}
 	}
 
@@ -212,32 +300,43 @@ _again:
 	while ( _nacts-- > 0 ) {
 		switch ( *_acts++ ) {
 	case 0:
-#line 30 "sample.rl"
+#line 110 "sample.rl"
 	{
-				cout << "Element -> " << (char) (*p) << endl;
-				currentLength++;
+            if (DEBUG) {
+                cout << "Element -> " << (char) (*p) << endl;
+            }
+            currentLength++;
+			if ((*p) >= 97 && (*p) <= 122) {
+				insertIntoTempPatternList(tempPatternList, (char) (*p), _tempPatternListIndex);
 			}
+        }
 	break;
 	case 1:
-#line 35 "sample.rl"
+#line 120 "sample.rl"
 	{
-				res++;
-				printf("ACTUAL Match happened.\n");
-				if (DEBUG) {
-					for (int i=0 ;i< temp_numbersInPattern.size(); i++) {
-						cout << temp_numbersInPattern[i] << " ~ ";
-						numbersInPattern.push_back(temp_numbersInPattern[i]);
-					}
-					cout << endl;
-					numberList.push_back(numbersInPattern);
-					numbersInPattern.clear();
-					temp_numbersInPattern.clear();
-				}
-				cs = foo_start;
-				p--;
-			}
+            res++;
+            printf("Match happened.\n");
+            for (int i=0 ;i< temp_numbersInPattern.size(); i++) {
+                if (DEBUG) {
+                    cout << temp_numbersInPattern[i] << " ~ ";
+                }
+                numbersInPattern.push_back(temp_numbersInPattern[i]);
+            }
+            if (DEBUG) {
+                printf("\n");
+            }
+            numberList.push_back(numbersInPattern);
+			insertIntoPatternList(patternMap, tempPatternList, numberList);
+			resetPatternList(tempPatternList);
+			numberList.clear();
+            numbersInPattern.clear();
+            temp_numbersInPattern.clear();
+
+            cs = foo_start;
+            p--;
+        }
 	break;
-#line 241 "sample.cpp"
+#line 340 "sample.cpp"
 		}
 	}
 
@@ -252,25 +351,31 @@ _again:
 	while ( __nacts-- > 0 ) {
 		switch ( *__acts++ ) {
 	case 3:
-#line 58 "sample.rl"
+#line 150 "sample.rl"
 	{
-				// res = 0;
-				printf("Error happened.\n");
-				cs = foo_start;
-				printf("cs is %d and foo_start is %d\n", cs, foo_start);
-				printf("currentLength is %d and totalLength is %d\n", currentLength, totalLength);
+            //res = 0;
+            if (DEBUG) {
+                printf("Error happened.\n");
+            }
+            cs = foo_start;
+            if (DEBUG) {
+                printf("cs is %d and foo_start is %d\n", cs, foo_start);
+            }
 
-				temp_numbersInPattern.clear();
-				if (currentLength >= totalLength) {
-					// Force break... very bad practice
-					cout << "Trying to break "<< endl;
-					{p++; goto _out; }
-				}
-				// fgoto main;
-				
-			}
+			numberList.clear();
+            temp_numbersInPattern.clear();
+			resetPatternList(tempPatternList);
+
+            if (currentLength >= totalLength) {
+                // Force break... very bad practice
+                if (DEBUG) {
+                    cout << "Trying to break "<< endl;
+                }
+                {p++; goto _out; }
+            }
+        }
 	break;
-#line 274 "sample.cpp"
+#line 379 "sample.cpp"
 		}
 	}
 	}
@@ -278,26 +383,43 @@ _again:
 	_out: {}
 	}
 
-#line 87 "sample.rl"
+#line 186 "sample.rl"
 
 
-		cout << "Finished processing \n\n";
-		
-	// }
+	cout << "Finished processing \n\n";
+	
 
 
 	printf("Pattern matched %d times\n", res);
 	if (DEBUG) {
-		cout << "Numbers in the list are " << endl;
-		for (int i =0; i < numberList.size(); i++) {
-			cout << "List " << i+1 << " : " << endl;
-			for (int j=0;j<numberList[i].size(); j++) {
-				cout << numberList[i][j] << " ";
-			}
-			cout << endl;
-		}
+		displayPatternList(patternMap);
+		// if (numberList.size() > 0) {
+		// 	printf("Numbers in the list are \n");
+		// 	for (int i =0; i < numberList.size(); i++) {
+		// 		printf("List %d : \n", i+1);
+		// 		for (int j=0;j<numberList[i].size(); j++) {
+		// 			printf("%d ",numberList[i][j]);
+		// 		}
+		// 		printf("\n");
+		// 	}
+    	// }
+
+
+
 	}
 
+}
 
+
+int main( int argc, char **argv )
+{
+	// char *inp;
+	char *inp = (char *)malloc(INT_MAX * sizeof(char *));
+	if (argc >= 2) {
+		inp = argv[1];
+	} else {
+		scanf("%s",inp);
+	}
+	mine_pattern(inp);
 	return 0;
 }
