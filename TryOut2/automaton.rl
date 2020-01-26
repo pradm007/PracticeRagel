@@ -60,7 +60,7 @@ void ParserAutomaton::mine_pattern(char const *p) {
             temp_numbersInPattern.clear();
 
             cs = foo_start;
-            //p--;
+            p--;
         }
         action NUM {
             // printf("fc =%c \n",fc);
