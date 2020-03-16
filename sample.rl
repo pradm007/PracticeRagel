@@ -184,10 +184,10 @@ void mine_pattern(char *p) {
 		#pattern3 = ((('cd'([0-9]+ $from(NUM))'ef')) $to(CHUNK) %to(A) $lerr(E));
 		#pat1 = ((('ab'([0-9]+)'cd') | ('cd'([0-9]+)'ef'))+) $to(CHUNK) %to(A) $lerr(E);
 		#main := (pattern1 | pattern2 | pattern3)+;
-		#main := ((('ab'([0-9]+ $from(NUM))'cd') | ('ab'([0-9]+ $from(NUM))'ef') | ('cd'([0-9]+ $from(NUM))'ef'))+) $to(CHUNK) %to(A) $lerr(E);
+		main := ((('a01'([0-9]+ $from(NUM))'b01') | ('a00'([0-9]+ $from(NUM))'b01') | ('a02'([0-9]+ $from(NUM))'b01'))+) $to(CHUNK) %to(A) $lerr(E);
 		#main := ((('a'([0-9]+ $from(NUM))'a') | ('a'([0-9]+ $from(NUM))'b') | ('a'([0-9]+ $from(NUM))'c') | ('a'([0-9]+ $from(NUM))'d') | ('b'([0-9]+ $from(NUM))'a') | ('b'([0-9]+ $from(NUM))'b') | ('b'([0-9]+ $from(NUM))'c') | ('b'([0-9]+ $from(NUM))'d') | ('c'([0-9]+ $from(NUM))'a') | ('c'([0-9]+ $from(NUM))'b') | ('c'([0-9]+ $from(NUM))'c') | ('c'([0-9]+ $from(NUM))'d') | ('d'([0-9]+ $from(NUM))'a') | ('d'([0-9]+ $from(NUM))'b') | ('d'([0-9]+ $from(NUM))'c') | ('d'([0-9]+ $from(NUM))'d'))+)$to(CHUNK) %to(A) $lerr(E);
 		#main := pat1;
-        main := ((('a'([0-9]+ $from(NUM))'b'([0-9]+ $from(NUM_NOTRACK))'c') | ('b'([0-9]+ $from(NUM))'c') | ('d'([0-9]+ $from(NUM_NOTRACK))'e'([0-9]+ $from(NUM))'a') | ('c'([0-9]+ $from(NUM))'d'([0-9]+ $from(NUM_NOTRACK))'e'))+)$to(CHUNK) %to(A) $lerr(E);
+        #main := ((('a'([0-9]+ $from(NUM))'b'([0-9]+ $from(NUM_NOTRACK))'c') | ('b'([0-9]+ $from(NUM))'c') | ('d'([0-9]+ $from(NUM_NOTRACK))'e'([0-9]+ $from(NUM))'a') | ('c'([0-9]+ $from(NUM))'d'([0-9]+ $from(NUM_NOTRACK))'e'))+)$to(CHUNK) %to(A) $lerr(E);
 
 		write init nocs;
 		write exec noend;
