@@ -1,6 +1,13 @@
 // #include
 // "/home/pradeep/UBC/Projects/QRE/miningQre/TRE_Mining/spec-mining/packrat/lib/x86_64-pc-linux-gnu/3.4.4/automatonR/exec/automaton.h"
 // #include "automaton.h"
+
+/**
+ * As of March 15 2020,
+ * This file is a working sample for dynamic linking of compiled ragel file.
+ * 
+**/
+
 #include <bits/stdc++.h>
 #include <dlfcn.h>
 using namespace std;
