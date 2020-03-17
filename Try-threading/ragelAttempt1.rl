@@ -15,7 +15,7 @@ using namespace std;
 #endif
 
 const string numberListPattern = "[0-9]+";
-unordered_map<string, vector<vector<int> > > patternMap;
+unordered_map<string, vector<vector<string> > > patternMap;
 
 %% machine foo;
 %% write data;
@@ -25,42 +25,23 @@ string getString(char ch) {
     return "" + ch;    
 } 
 
-void insertIntoTempPatternList(vector<string>  &tempPatternList, char element, int where) {
-	switch(where) {
-		case 0:
-			if (tempPatternList.empty()) { //completely empty. This happens in the first match
-				string temp = "";
-				temp.push_back((char) element);
-				tempPatternList.push_back(temp);
-			} else {
-				tempPatternList[where].push_back((char) element);
-			}
-
-		break;
-		case 1:
-			if (tempPatternList.size() == where) { //no new element in the 2nd index
-				string temp = "";
-				temp.push_back((char) element);
-				tempPatternList.push_back(temp);
-			} else {
-				tempPatternList[where].push_back((char) element);
-			}
-
-		break;
-	};
+void insertIntoTempPatternList(string  &tempPatternList, char element, int *flipperOnEvent, vector<string> &numberList) {
+	if ((element >= 97 && element <= 122) ) { //its event
+		tempPatternList += element;
+		*flipperOnEvent = 1;
+	} else { //its a number
+		if ((char) tempPatternList[tempPatternList.size() - 1] != (char) numberListPattern[numberListPattern.size() - 1]) {
+			tempPatternList += numberListPattern;
+		}
+		if (*flipperOnEvent == 1) {
+			//Add new vector for number tracing
+			numberList.push_back("");
+		}
+		*flipperOnEvent = 0;
+	}
 }
 
-void insertIntoPatternList(unordered_map<string, vector<vector<int> > > &patternMap, vector<string>  &tempPatternList, vector<vector<int> > &numberList) {
-	string fullPattern = "";
-
-	for (int i=0;i<tempPatternList.size();i++) {
-		fullPattern += tempPatternList[i];
-		if (tempPatternList.size()-1 > i) {
-			fullPattern += numberListPattern;
-		}
-	}
-
-	vector<vector<int> >  newNumberList = numberList;
+void insertIntoPatternList(unordered_map<string, vector < vector<string > > > &patternMap, string  &fullPattern, vector<string > &numberList) {
 
 	const bool is_in = patternMap.find(fullPattern) != patternMap.end();
 	if (is_in) {
@@ -68,36 +49,35 @@ void insertIntoPatternList(unordered_map<string, vector<vector<int> > > &pattern
 			cout << "Found " << fullPattern << endl;
 		}
 		auto itr = patternMap.find(fullPattern);
-		vector<vector<int> >  oldNumberList = itr->second;
-		oldNumberList.reserve(oldNumberList.size() + newNumberList.size());
-		for (int j=0;j<newNumberList.size();j++) {
-			oldNumberList.push_back(newNumberList[j]);
-		}
+		vector<vector<string > > oldNumberList = itr->second;
+		oldNumberList.push_back(numberList);
+
 		patternMap[itr->first] = oldNumberList;
+
 	} else {
 		if (!MINIMAL) {
 			cout << "Did not find " << fullPattern << " thus inserting new " << endl;
 		}
+		vector<vector<string> >  newNumberList;
+		newNumberList.push_back(numberList);
 		patternMap.emplace(fullPattern, newNumberList);
 	}
 
 }
 
-void resetPatternList(vector<string> &tempPatternList, int *_tempPatternListIndex) {
-	*_tempPatternListIndex = 0;
+void resetPatternList(string &tempPatternList) {
 	tempPatternList.clear();
-	tempPatternList.reserve(100);
 }
 
-void displayPatternList(unordered_map<string, vector<vector<int> > > &patternMap) {
+void displayPatternList(unordered_map<string, vector<vector<string> > > &patternMap) {
 	for (auto itr = patternMap.begin(); itr != patternMap.end(); itr++) {
 		string pattern = "" + (string) itr->first;
 		cout << pattern << " :\n";
-		vector<vector<int> > numberList = itr->second;	
+		vector<vector<string> > numberList = itr->second;	
 		for (int i =0; i < numberList.size(); i++) {
 			printf("\tList %d : \n\t\t\t", i+1);
 			for (int j=0;j<numberList[i].size(); j++) {
-				printf("%d ",numberList[i][j]);
+				cout << numberList[i][j];
 			}
 			printf("\n");
 		}
@@ -106,18 +86,22 @@ void displayPatternList(unordered_map<string, vector<vector<int> > > &patternMap
 }
 
 
-void mergeList(unordered_map<string, vector<vector<int> > > patternMapInternal) {
+void mergeList(unordered_map<string, vector<vector<string> > > patternMapInternal) {
+
 	for (auto itr = patternMapInternal.begin(); itr != patternMapInternal.end(); itr++) {
 		const bool is_in = patternMap.find((string) itr->first) != patternMap.end();
+
 		if (is_in) { //Existing pattern
 			auto itr_int = patternMap.find((string) itr->first);
-			vector<vector<int> >  oldNumberList = itr_int->second;
-			((vector<vector<int> >) itr->second).reserve(((vector<vector<int> >) itr->second).size() + oldNumberList.size());
+			vector<vector<string> >  oldNumberList = itr_int->second;
+
+			((vector<vector<string> >) itr->second).reserve(((vector<vector<string> >) itr->second).size() + oldNumberList.size());
 			for (int i=0; i<oldNumberList.size();i++) {
-				((vector<vector<int> >) itr->second).push_back(oldNumberList[i]);
+				((vector<vector<string> >) itr->second).push_back(oldNumberList[i]);
 			}
 		} else { //Insert new pattern
-			patternMap.emplace((string) itr->first, ((vector<vector<int> >) itr->second));
+
+			patternMap.emplace((string) itr->first, ((vector<vector<string> >) itr->second));
 		}
 	}
 }
@@ -125,13 +109,13 @@ void mergeList(unordered_map<string, vector<vector<int> > > patternMapInternal) 
 void mine_pattern(char *p) {
 	int cs, res = 0;
 	int totalLength = 0, currentLength = 0;
-	vector<int> numbersInPattern;
-	vector<vector<int> > numberList;	
-	vector<string> tempPatternList;
-	int _tempPatternListIndex = 0;
-	tempPatternList.reserve(100);
+	string numbersInPattern;
+	vector<string > numberList;	
+	string tempPatternList;
 
-	unordered_map<string, vector<vector<int> > > patternMapInternal;
+	int flipperOnEvent = 1; // flips to 0 in case of number
+
+	unordered_map<string, vector<vector<string> > > patternMapInternal;
 
 	cs = foo_start;
 	totalLength = strlen(p);
@@ -139,10 +123,7 @@ void mine_pattern(char *p) {
 	if (!MINIMAL) {
 		printf("Input is %s \n",p);
 	}
-	vector<int> temp_numbersInPattern;
 	numberList.reserve(100);
-	temp_numbersInPattern.reserve(100);
-	numbersInPattern.reserve(200);
 
 	if (!MINIMAL) {
 		printf("cs is %d and foo_start is %d\n", cs, foo_start);
@@ -154,9 +135,12 @@ void mine_pattern(char *p) {
             if (DEBUG) {
                 cout << "Element -> " << (char) fc << endl;
             }
+			if (!MINIMAL) {
+				cout << "Chunk called " << endl;
+			}
             currentLength++;
-			if (fc >= 97 && fc <= 122) {
-				insertIntoTempPatternList(tempPatternList, (char) fc, _tempPatternListIndex);
+			if ((fc >= 97 && fc <= 122) || (fc >= 48 && fc <= 57)) {
+				insertIntoTempPatternList(tempPatternList, (char) fc, &flipperOnEvent, numberList);
 			}
         }
 
@@ -165,43 +149,28 @@ void mine_pattern(char *p) {
 			if (!MINIMAL) {
             	printf("Match happened.\n");
 			}
-            for (int i=0 ;i< temp_numbersInPattern.size(); i++) {
-                if (DEBUG) {
-                    cout << temp_numbersInPattern[i] << " ~ ";
-                }
-                numbersInPattern.push_back(temp_numbersInPattern[i]);
-            }
-            if (DEBUG) {
-                printf("\n");
-            }
-            numberList.push_back(numbersInPattern);
-			// #pragma omp critical
-			// {
-			// 	insertIntoPatternList(patternMap, tempPatternList, numberList);
-			// }
+
 			insertIntoPatternList(patternMapInternal, tempPatternList, numberList);
 
-			resetPatternList(tempPatternList, &_tempPatternListIndex);
+			resetPatternList(tempPatternList);
+
 			numberList.clear();
-            numbersInPattern.clear();
-            temp_numbersInPattern.clear();
-			temp_numbersInPattern.reserve(100);
-			numbersInPattern.reserve(200);
-			numberList.reserve(100);
 
             cs = foo_start;
             p--;
         }
         action NUM {
-            // printf("fc =%c \n",fc);
             if (fc >= 48 && fc <= 57) {
-                // printf("	Num =%c \n",fc);
-                temp_numbersInPattern.push_back( (char) (fc-48));
-				_tempPatternListIndex = 1;
+				if (flipperOnEvent == 1) { //Flipper added just to be safe
+					//Add new vector for number tracing
+					numberList.push_back("");
+					flipperOnEvent = 0;
+				}
+
+				numberList[numberList.size() - 1] += (char) fc;
             }
         }
 		action NUM_NOTRACK {
-            // printf("fc =%c \n",fc);
             if (fc >= 48 && fc <= 57) {
                 // printf("Skipping Num =%c \n",fc);
                 // temp_numbersInPattern.push_back( (char) (fc-48));
@@ -219,11 +188,7 @@ void mine_pattern(char *p) {
             }
 
 			numberList.clear();
-            temp_numbersInPattern.clear();
-			resetPatternList(tempPatternList, &_tempPatternListIndex);
-			temp_numbersInPattern.reserve(100);
-			numbersInPattern.reserve(200);
-			numberList.reserve(100);
+			resetPatternList(tempPatternList);
 
             if (currentLength >= totalLength) {
                 // Force break... very bad practice
@@ -241,6 +206,7 @@ void mine_pattern(char *p) {
 		write exec noend;
 	}%%
 
+	
 	cout << "Finished processing \n\n";
 	
 	if (DEBUG) {
@@ -265,7 +231,7 @@ void mine_pattern(char *p) {
 
 }
 
-int THREAD_COUNT = 16;
+int THREAD_COUNT = 40;
 const char delimiter = '|';
 vector<string> inputStream_per_thread;
 void chunkDivider(char *inp);
