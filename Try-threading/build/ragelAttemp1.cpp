@@ -468,7 +468,7 @@ _again:
 
 }
 
-int THREAD_COUNT = 80;
+int THREAD_COUNT = 16;
 const char delimiter = '|';
 vector<string> inputStream_per_thread;
 void chunkDivider(char *inp);
