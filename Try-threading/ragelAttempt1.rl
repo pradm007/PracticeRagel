@@ -14,8 +14,15 @@ using namespace std;
 #define FILEINPUT 0
 #endif
 
+#ifndef MINIMAL_2
+#define MINIMAL_2 0
+#endif
+
 const string numberListPattern = "[0-9]+";
 unordered_map<string, vector<vector<string> > > patternMap;
+
+int g_reserveSize = 1e+7;
+int g_totalCombination = 4;
 
 %% machine foo;
 %% write data;
@@ -59,6 +66,7 @@ void insertIntoPatternList(unordered_map<string, vector < vector<string > > > &p
 			cout << "Did not find " << fullPattern << " thus inserting new " << endl;
 		}
 		vector<vector<string> >  newNumberList;
+		newNumberList.reserve(1000000);
 		newNumberList.push_back(numberList);
 		patternMap.emplace(fullPattern, newNumberList);
 	}
@@ -94,14 +102,29 @@ void mergeList(unordered_map<string, vector<vector<string> > > patternMapInterna
 		if (is_in) { //Existing pattern
 			auto itr_int = patternMap.find((string) itr->first);
 			vector<vector<string> >  oldNumberList = itr_int->second;
-
+			
 			((vector<vector<string> >) itr->second).reserve(((vector<vector<string> >) itr->second).size() + oldNumberList.size());
-			for (int i=0; i<oldNumberList.size();i++) {
-				((vector<vector<string> >) itr->second).push_back(oldNumberList[i]);
-			}
-		} else { //Insert new pattern
+			int oldSize = ((vector<vector<string> >) itr->second).size();
 
-			patternMap.emplace((string) itr->first, ((vector<vector<string> >) itr->second));
+			#pragma omp parallel for
+			for (int i=0; i<oldNumberList.size();i++) {
+				// ((vector<vector<string> >) itr->second).push_back(oldNumberList[i]);
+				((vector<vector<string> >) itr->second)[oldSize + i] = oldNumberList[i];
+			}
+
+		} else { //Insert new pattern
+			vector<vector<string> >  newNumberList;
+			int reserveSize = g_reserveSize > ((vector<vector<string> >) itr->second).size() ? g_reserveSize : ((vector<vector<string> >) itr->second).size();
+
+			newNumberList.reserve(reserveSize);
+
+			#pragma omp parallel for
+			for (int i=0; i<((vector<vector<string> >) itr->second).size(); i++) {
+				// newNumberList.push_back(((vector<vector<string> >) itr->second)[i]);
+				newNumberList[i] = ((vector<vector<string> >) itr->second)[i];
+			}
+
+			patternMap.emplace((string) itr->first,  newNumberList);
 		}
 	}
 }
@@ -206,17 +229,19 @@ void mine_pattern(char *p) {
 		write exec noend;
 	}%%
 
-	
-	cout << "Finished processing \n\n";
+	if (!MINIMAL_2)	{
+		cout << "Finished processing \n\n";
+	}
 	
 	if (DEBUG) {
 		cout << "Displaying internal pattern map per thread" << endl;
 		displayPatternList(patternMapInternal);
 	}
 
-
-	printf("For Thread %d \t", omp_get_thread_num());
-	printf("Pattern matched %d times\n", res);
+	if (!MINIMAL_2) {
+		printf("For Thread %d \t", omp_get_thread_num());
+		printf("Pattern matched %d times\n", res);
+	}
 
 	#pragma omp critical
 	{
@@ -252,6 +277,7 @@ int main( int argc, char **argv )
 		myfile.close();
 		}
 		input = (char *)malloc((inp.size() + 1) * sizeof(char *));
+		g_reserveSize = (inp.size() + 1) / g_totalCombination;
 		strcpy(input, inp.c_str());
 	} else if (argc >= 2) {
 		input = argv[1];
@@ -330,7 +356,7 @@ void parallelExecution(char *inp) {
 	printf("Finished chunk division in %.6f ms. \n", (1000 * (omp_get_wtime() - t)));
 
 	t = omp_get_wtime();
-	#pragma omp parallel for num_threads(THREAD_COUNT) shared(patternMap, inputStream_per_thread) firstprivate(numberListPattern)
+	#pragma omp parallel for num_threads(THREAD_COUNT) shared(patternMap, inputStream_per_thread) firstprivate(numberListPattern, g_reserveSize, g_totalCombination)
 	for (int i=0;i<THREAD_COUNT;i++) {
 		// cout << "Thread " << i << endl << "initiatng ... " << endl;
 		// cout << "Input is " << inputStream_per_thread[i].c_str() << endl;

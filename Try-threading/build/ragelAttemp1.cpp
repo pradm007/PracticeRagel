@@ -16,13 +16,20 @@ using namespace std;
 #define FILEINPUT 0
 #endif
 
+#ifndef MINIMAL_2
+#define MINIMAL_2 0
+#endif
+
 const string numberListPattern = "[0-9]+";
 unordered_map<string, vector<vector<string> > > patternMap;
 
+int g_reserveSize = 1e+7;
+int g_totalCombination = 4;
 
-#line 21 "ragelAttempt1.rl"
 
-#line 26 "build/ragelAttemp1.cpp"
+#line 28 "ragelAttempt1.rl"
+
+#line 33 "build/ragelAttemp1.cpp"
 static const char _foo_actions[] = {
 	0, 1, 0, 1, 2, 1, 3, 2, 
 	0, 1
@@ -81,7 +88,7 @@ static const int foo_error = 0;
 static const int foo_en_main = 1;
 
 
-#line 22 "ragelAttempt1.rl"
+#line 29 "ragelAttempt1.rl"
 
 string getString(char ch) { 
 	string temp = "";
@@ -122,6 +129,7 @@ void insertIntoPatternList(unordered_map<string, vector < vector<string > > > &p
 			cout << "Did not find " << fullPattern << " thus inserting new " << endl;
 		}
 		vector<vector<string> >  newNumberList;
+		newNumberList.reserve(1000000);
 		newNumberList.push_back(numberList);
 		patternMap.emplace(fullPattern, newNumberList);
 	}
@@ -157,14 +165,29 @@ void mergeList(unordered_map<string, vector<vector<string> > > patternMapInterna
 		if (is_in) { //Existing pattern
 			auto itr_int = patternMap.find((string) itr->first);
 			vector<vector<string> >  oldNumberList = itr_int->second;
-
+			
 			((vector<vector<string> >) itr->second).reserve(((vector<vector<string> >) itr->second).size() + oldNumberList.size());
-			for (int i=0; i<oldNumberList.size();i++) {
-				((vector<vector<string> >) itr->second).push_back(oldNumberList[i]);
-			}
-		} else { //Insert new pattern
+			int oldSize = ((vector<vector<string> >) itr->second).size();
 
-			patternMap.emplace((string) itr->first, ((vector<vector<string> >) itr->second));
+			#pragma omp parallel for
+			for (int i=0; i<oldNumberList.size();i++) {
+				// ((vector<vector<string> >) itr->second).push_back(oldNumberList[i]);
+				((vector<vector<string> >) itr->second)[oldSize + i] = oldNumberList[i];
+			}
+
+		} else { //Insert new pattern
+			vector<vector<string> >  newNumberList;
+			int reserveSize = g_reserveSize > ((vector<vector<string> >) itr->second).size() ? g_reserveSize : ((vector<vector<string> >) itr->second).size();
+
+			newNumberList.reserve(reserveSize);
+
+			#pragma omp parallel for
+			for (int i=0; i<((vector<vector<string> >) itr->second).size(); i++) {
+				// newNumberList.push_back(((vector<vector<string> >) itr->second)[i]);
+				newNumberList[i] = ((vector<vector<string> >) itr->second)[i];
+			}
+
+			patternMap.emplace((string) itr->first,  newNumberList);
 		}
 	}
 }
@@ -193,11 +216,11 @@ void mine_pattern(char *p) {
 	}
 
 	
-#line 197 "build/ragelAttemp1.cpp"
+#line 220 "build/ragelAttemp1.cpp"
 	{
 	}
 
-#line 201 "build/ragelAttemp1.cpp"
+#line 224 "build/ragelAttemp1.cpp"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -213,7 +236,7 @@ _resume:
 	while ( _nacts-- > 0 ) {
 		switch ( *_acts++ ) {
 	case 2:
-#line 162 "ragelAttempt1.rl"
+#line 185 "ragelAttempt1.rl"
 	{
             if ((*p) >= 48 && (*p) <= 57) {
 				if (flipperOnEvent == 1) { //Flipper added just to be safe
@@ -223,11 +246,10 @@ _resume:
 				}
 
 				numberList[numberList.size() - 1] += (char) (*p);
-				// cout << "~ " << numberList[numberList.size() - 1];
             }
         }
 	break;
-#line 231 "build/ragelAttemp1.cpp"
+#line 253 "build/ragelAttemp1.cpp"
 		}
 	}
 
@@ -293,7 +315,7 @@ _match:
 		switch ( *_acts++ )
 		{
 	case 3:
-#line 181 "ragelAttempt1.rl"
+#line 203 "ragelAttempt1.rl"
 	{
             //res = 0;
             if (DEBUG) {
@@ -316,7 +338,7 @@ _match:
             }
         }
 	break;
-#line 320 "build/ragelAttemp1.cpp"
+#line 342 "build/ragelAttemp1.cpp"
 		}
 	}
 
@@ -326,7 +348,7 @@ _again:
 	while ( _nacts-- > 0 ) {
 		switch ( *_acts++ ) {
 	case 0:
-#line 134 "ragelAttempt1.rl"
+#line 157 "ragelAttempt1.rl"
 	{
             if (DEBUG) {
                 cout << "Element -> " << (char) (*p) << endl;
@@ -341,7 +363,7 @@ _again:
         }
 	break;
 	case 1:
-#line 147 "ragelAttempt1.rl"
+#line 170 "ragelAttempt1.rl"
 	{
             res++;
 			if (!MINIMAL) {
@@ -358,7 +380,7 @@ _again:
             p--;
         }
 	break;
-#line 362 "build/ragelAttemp1.cpp"
+#line 384 "build/ragelAttemp1.cpp"
 		}
 	}
 
@@ -373,7 +395,7 @@ _again:
 	while ( __nacts-- > 0 ) {
 		switch ( *__acts++ ) {
 	case 3:
-#line 181 "ragelAttempt1.rl"
+#line 203 "ragelAttempt1.rl"
 	{
             //res = 0;
             if (DEBUG) {
@@ -396,7 +418,7 @@ _again:
             }
         }
 	break;
-#line 400 "build/ragelAttemp1.cpp"
+#line 422 "build/ragelAttemp1.cpp"
 		}
 	}
 	}
@@ -404,20 +426,22 @@ _again:
 	_out: {}
 	}
 
-#line 208 "ragelAttempt1.rl"
+#line 230 "ragelAttempt1.rl"
 
 
-	
-	cout << "Finished processing \n\n";
+	if (!MINIMAL_2)	{
+		cout << "Finished processing \n\n";
+	}
 	
 	if (DEBUG) {
 		cout << "Displaying internal pattern map per thread" << endl;
 		displayPatternList(patternMapInternal);
 	}
 
-
-	printf("For Thread %d \t", omp_get_thread_num());
-	printf("Pattern matched %d times\n", res);
+	if (!MINIMAL_2) {
+		printf("For Thread %d \t", omp_get_thread_num());
+		printf("Pattern matched %d times\n", res);
+	}
 
 	#pragma omp critical
 	{
@@ -453,6 +477,7 @@ int main( int argc, char **argv )
 		myfile.close();
 		}
 		input = (char *)malloc((inp.size() + 1) * sizeof(char *));
+		g_reserveSize = (inp.size() + 1) / g_totalCombination;
 		strcpy(input, inp.c_str());
 	} else if (argc >= 2) {
 		input = argv[1];
@@ -531,7 +556,7 @@ void parallelExecution(char *inp) {
 	printf("Finished chunk division in %.6f ms. \n", (1000 * (omp_get_wtime() - t)));
 
 	t = omp_get_wtime();
-	#pragma omp parallel for num_threads(THREAD_COUNT) shared(patternMap, inputStream_per_thread) firstprivate(numberListPattern)
+	#pragma omp parallel for num_threads(THREAD_COUNT) shared(patternMap, inputStream_per_thread) firstprivate(numberListPattern, g_reserveSize, g_totalCombination)
 	for (int i=0;i<THREAD_COUNT;i++) {
 		// cout << "Thread " << i << endl << "initiatng ... " << endl;
 		// cout << "Input is " << inputStream_per_thread[i].c_str() << endl;
