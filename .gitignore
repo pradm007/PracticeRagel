@@ -58,3 +58,5 @@ Benchmark/Synthetic/trace5.txt
 # Output file
 build/output
 build/
+Try-threading/build/
+Try-threading/build/*
