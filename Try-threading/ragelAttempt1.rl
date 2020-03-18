@@ -18,6 +18,10 @@ using namespace std;
 #define MINIMAL_2 0
 #endif
 
+#ifndef DISPLAY_MAP
+#define DISPLAY_MAP 0
+#endif
+
 const string numberListPattern = "[0-9]+";
 unordered_map<string, vector<vector<string> > > patternMap;
 
@@ -120,30 +124,22 @@ void mergeList(unordered_map<string, vector<vector<string> > > &patternMapIntern
 			vector<vector<string> >  *oldNumberList = &itr_global->second;
 			
 			int oldSize = pMapInternalValue.size();
-			// oldNumberList.reserve(10000);
-			// *oldNumberList.reserve(10000);
 
 			for (int i=0; i<pMapInternalValue.size();i++) {
 				oldNumberList->push_back(pMapInternalValue[i]);
 			}
-			// cout << "---------" << endl;
-			// displayPatternList_Internal(oldNumberList);
-			// cout << "---------" << endl;
 
 		} else { //Insert new pattern
 
-			// vector<vector<string> >  newNumberList;// = new vector<vector<string> >;
 			int reserveSize = g_reserveSize > pMapInternalValue.size() ? g_reserveSize : pMapInternalValue.size();
 			vector<vector<string> >  *newNumberList = new vector<vector<string> >;
 			newNumberList->reserve(reserveSize);
 
 			// #pragma omp parallel for
 			for (int i=0; i<pMapInternalValue.size(); i++) {
-				// newNumberList.push_back( pMapInternalValue.at(i) );
 				newNumberList->push_back( pMapInternalValue.at(i) );
 			}
 
-			// patternMap.emplace((string) itr->first,  newNumberList);
 			patternMap.emplace((string) itr->first,  *newNumberList);
 		}
 
@@ -202,8 +198,7 @@ void mine_pattern(char *p) {
 
 			resetPatternList(tempPatternList);
 
-			// numberList.clear();
-			numberList = new vector<string>;//
+			numberList = new vector<string>;
 
             cs = foo_start;
             p--;
@@ -236,7 +231,6 @@ void mine_pattern(char *p) {
                 printf("cs is %d and foo_start is %d\n", cs, foo_start);
             }
 
-			// numberList.clear();
 			numberList = new vector<string>;
 			resetPatternList(tempPatternList);
 
@@ -294,7 +288,6 @@ const char delimiter = '|';
 vector<string> inputStream_per_thread;
 void chunkDivider(char *inp);
 void showChunks();
-// void initializeInputStreamPerThread();
 void serialeExecution(char *);
 void parallelExecution(char *);
 
@@ -302,7 +295,7 @@ int main( int argc, char **argv )
 {
 	char *input;
 	if (FILEINPUT) {
-		ifstream myfile("../Benchmark/Synthetic/trace4.txt");
+		ifstream myfile("../Benchmark/Synthetic/trace1.txt");
 		string inp;
 		if (myfile.is_open()) {
 		while (getline(myfile, inp)) {
@@ -374,6 +367,9 @@ void showChunks() {
 	}
 }
 
+/**
+ * Function for serial execution
+ **/
 void serialeExecution(char *inp) {
 
   	double t = omp_get_wtime();
@@ -383,13 +379,18 @@ void serialeExecution(char *inp) {
 	}
 
 	cout << "Size of pattern Map " << patternMap.size() << endl;
-	// displayPatternList(patternMap);
+	if (DISPLAY_MAP) {
+		displayPatternList(patternMap);
+	}
 
 	/* calculate and print processing time*/
 	t = 1000 * (omp_get_wtime() - t);
 	printf("Finished in %.6f ms. \n", t);
 }
 
+/**
+ * Function for parallel Execution
+ **/
 void parallelExecution(char *inp) {
 	
 	double t;
@@ -406,20 +407,20 @@ void parallelExecution(char *inp) {
 
 	#pragma omp parallel for num_threads(THREAD_COUNT) shared(patternMap, inputStream_per_thread) firstprivate(numberListPattern, g_reserveSize, g_totalCombination)
 	for (int i=0;i<inputStream_per_thread.size();i++) {
-		// cout << "Thread " << i << endl << "initiatng ... " << endl;
-		// cout << "Input is " << inputStream_per_thread[i].c_str() << endl;
-		// char inpPerThChar[inputStream_per_thread[i].size() + 1]; 
 
 		string chunkForThread = inputStream_per_thread[i];
-		// cout << chunkForThread << endl;
 		char *inpPerThChar = (char *) malloc(sizeof(char)*(chunkForThread.size() + 1)); 
 		strcpy(inpPerThChar, chunkForThread.c_str());
 		mine_pattern(inpPerThChar);
 		free(inpPerThChar);
+		chunkForThread.clear();
+		chunkForThread.shrink_to_fit();
 	}
 
 	cout << "Size of pattern Map " << patternMap.size() << endl;
-	displayPatternList(patternMap);
+	if (DISPLAY_MAP) {
+		displayPatternList(patternMap);
+	}
 
 	/* calculate and print processing time*/
 	t = 1000 * (omp_get_wtime() - t);
