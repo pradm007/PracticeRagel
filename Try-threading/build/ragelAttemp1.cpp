@@ -95,7 +95,7 @@ string getString(char ch) {
     return "" + ch;    
 } 
 
-void insertIntoTempPatternList(string  &tempPatternList, char element, int *flipperOnEvent, vector<string> &numberList) {
+void insertIntoTempPatternList(string  &tempPatternList, char element, int *flipperOnEvent, vector<string> *numberList) {
 	if ((element >= 97 && element <= 122) ) { //its event
 		tempPatternList += element;
 		*flipperOnEvent = 1;
@@ -105,32 +105,33 @@ void insertIntoTempPatternList(string  &tempPatternList, char element, int *flip
 		}
 		if (*flipperOnEvent == 1) {
 			//Add new vector for number tracing
-			numberList.push_back("");
+			numberList->push_back("");
 		}
 		*flipperOnEvent = 0;
 	}
 }
 
-void insertIntoPatternList(unordered_map<string, vector < vector<string > > > &patternMap, string  &fullPattern, vector<string > &numberList) {
+void insertIntoPatternList(unordered_map<string, vector < vector<string > > > &patternMap, string  &fullPattern, vector<string > *numberList) {
 
-	const bool is_in = patternMap.find(fullPattern) != patternMap.end();
+	auto itr = patternMap.find(fullPattern);
+	const bool is_in = itr != patternMap.end();
 	if (is_in) {
 		if (!MINIMAL) {
 			cout << "Found " << fullPattern << endl;
 		}
-		auto itr = patternMap.find(fullPattern);
 		vector<vector<string > > oldNumberList = itr->second;
-		oldNumberList.push_back(numberList);
+		oldNumberList.push_back(*numberList);
 
-		patternMap[itr->first] = oldNumberList;
+		// patternMap[itr->first] = oldNumberList;
+		patternMap.emplace(itr->first, oldNumberList);
 
 	} else {
 		if (!MINIMAL) {
 			cout << "Did not find " << fullPattern << " thus inserting new " << endl;
 		}
 		vector<vector<string> >  newNumberList;
-		newNumberList.reserve(1000000);
-		newNumberList.push_back(numberList);
+		newNumberList.reserve(10000);
+		newNumberList.push_back(*numberList);
 		patternMap.emplace(fullPattern, newNumberList);
 	}
 
@@ -140,54 +141,85 @@ void resetPatternList(string &tempPatternList) {
 	tempPatternList.clear();
 }
 
-void displayPatternList(unordered_map<string, vector<vector<string> > > &patternMap) {
-	for (auto itr = patternMap.begin(); itr != patternMap.end(); itr++) {
-		string pattern = "" + (string) itr->first;
-		cout << pattern << " :\n";
-		vector<vector<string> > numberList = itr->second;	
-		for (int i =0; i < numberList.size(); i++) {
+void displayPatternList_Internal(vector<vector<string> > &numberList) {
+	for (int i =0; i < numberList.size(); i++) {
 			printf("\tList %d : \n\t\t\t", i+1);
 			for (int j=0;j<numberList[i].size(); j++) {
 				cout << numberList[i][j];
 			}
 			printf("\n");
 		}
+}
 
+void displayPatternList(unordered_map<string, vector<vector<string> > > &patternMap) {
+	for (auto itr = patternMap.begin(); itr != patternMap.end(); itr++) {
+		string pattern = "" + (string) itr->first;
+		cout << pattern << " :\n";
+		vector<vector<string> > numberList = itr->second;	
+		/* for (int i =0; i < numberList.size(); i++) {
+			printf("\tList %d : \n\t\t\t", i+1);
+			for (int j=0;j<numberList[i].size(); j++) {
+				cout << numberList[i][j];
+			}
+			printf("\n");
+		} */
+		displayPatternList_Internal(numberList);
 	}
 }
 
 
-void mergeList(unordered_map<string, vector<vector<string> > > patternMapInternal) {
+void mergeList(unordered_map<string, vector<vector<string> > > &patternMapInternal) {
 
 	for (auto itr = patternMapInternal.begin(); itr != patternMapInternal.end(); itr++) {
-		const bool is_in = patternMap.find((string) itr->first) != patternMap.end();
+		auto itr_global = patternMap.find((string) itr->first);
+		const bool is_in = itr_global != patternMap.end();
+
+		vector<vector<string> > pMapInternalValue = (vector<vector<string> >) itr->second;
 
 		if (is_in) { //Existing pattern
-			auto itr_int = patternMap.find((string) itr->first);
-			vector<vector<string> >  oldNumberList = itr_int->second;
+			// vector<vector<string> >  oldNumberList = itr_global->second;
+			vector<vector<string> >  *oldNumberList = &itr_global->second;
 			
-			((vector<vector<string> >) itr->second).reserve(((vector<vector<string> >) itr->second).size() + oldNumberList.size());
-			int oldSize = ((vector<vector<string> >) itr->second).size();
+			int oldSize = pMapInternalValue.size();
+			// oldNumberList.reserve(10000);
+			// *oldNumberList.reserve(10000);
 
-			#pragma omp parallel for
-			for (int i=0; i<oldNumberList.size();i++) {
-				// ((vector<vector<string> >) itr->second).push_back(oldNumberList[i]);
-				((vector<vector<string> >) itr->second)[oldSize + i] = oldNumberList[i];
+			for (int i=0; i<pMapInternalValue.size();i++) {
+				// oldNumberList.push_back(pMapInternalValue[i]);
+				oldNumberList->push_back(pMapInternalValue[i]);
+				// ((vector<vector<string> >) itr->second)[oldSize + i] = oldNumberList[i];
 			}
+			// cout << "---------" << endl;
+			// displayPatternList_Internal(oldNumberList);
+			// cout << "---------" << endl;
+			// patternMap.at((string)itr->first) = oldNumberList;
+			patternMap.at((string)itr->first) = *oldNumberList;
 
 		} else { //Insert new pattern
-			vector<vector<string> >  newNumberList;
-			int reserveSize = g_reserveSize > ((vector<vector<string> >) itr->second).size() ? g_reserveSize : ((vector<vector<string> >) itr->second).size();
 
-			newNumberList.reserve(reserveSize);
+			// vector<vector<string> >  newNumberList;// = new vector<vector<string> >;
+			int reserveSize = g_reserveSize > pMapInternalValue.size() ? g_reserveSize : pMapInternalValue.size();
+			vector<vector<string> >  *newNumberList = new vector<vector<string> >;
+			// vector<vector<string> >  *newNumberList = new vector<vector<string> >(reserveSize);
+			
+			newNumberList->reserve(reserveSize);
 
-			#pragma omp parallel for
-			for (int i=0; i<((vector<vector<string> >) itr->second).size(); i++) {
-				// newNumberList.push_back(((vector<vector<string> >) itr->second)[i]);
-				newNumberList[i] = ((vector<vector<string> >) itr->second)[i];
+			// #pragma omp parallel for
+			for (int i=0; i<pMapInternalValue.size(); i++) {
+				// newNumberList.push_back( pMapInternalValue.at(i) );
+				newNumberList->push_back( pMapInternalValue.at(i) );
+
+				// for (int j=0;j<newNumberList[i].size();j++) { //looping through vector of string
+					// cout << newNumberList[i][j] << " ~ " ;
+					// for (int k=0;k<newNumberList[i][j].size();k++) { //
+					// 	cout << newNumberList[i][j][k] << " ";
+					// }
+					// cout << endl;
+				// }
 			}
 
-			patternMap.emplace((string) itr->first,  newNumberList);
+			// patternMap.emplace((string) itr->first,  newNumberList);
+			patternMap.emplace((string) itr->first,  *newNumberList);
 		}
 	}
 }
@@ -196,7 +228,7 @@ void mine_pattern(char *p) {
 	int cs, res = 0;
 	int totalLength = 0, currentLength = 0;
 	string numbersInPattern;
-	vector<string > numberList;	
+	vector<string > *numberList = new vector<string>(10);	
 	string tempPatternList;
 
 	int flipperOnEvent = 1; // flips to 0 in case of number
@@ -209,18 +241,18 @@ void mine_pattern(char *p) {
 	if (!MINIMAL) {
 		printf("Input is %s \n",p);
 	}
-	numberList.reserve(100);
+	// numberList.reserve(100);
 
 	if (!MINIMAL) {
 		printf("cs is %d and foo_start is %d\n", cs, foo_start);
 	}
 
 	
-#line 220 "build/ragelAttemp1.cpp"
+#line 252 "build/ragelAttemp1.cpp"
 	{
 	}
 
-#line 224 "build/ragelAttemp1.cpp"
+#line 256 "build/ragelAttemp1.cpp"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -236,20 +268,20 @@ _resume:
 	while ( _nacts-- > 0 ) {
 		switch ( *_acts++ ) {
 	case 2:
-#line 185 "ragelAttempt1.rl"
+#line 218 "ragelAttempt1.rl"
 	{
             if ((*p) >= 48 && (*p) <= 57) {
 				if (flipperOnEvent == 1) { //Flipper added just to be safe
 					//Add new vector for number tracing
-					numberList.push_back("");
+					numberList->push_back("");
 					flipperOnEvent = 0;
 				}
 
-				numberList[numberList.size() - 1] += (char) (*p);
+				numberList->at(numberList->size() - 1) = numberList->at(numberList->size() - 1) + (char) (*p);
             }
         }
 	break;
-#line 253 "build/ragelAttemp1.cpp"
+#line 285 "build/ragelAttemp1.cpp"
 		}
 	}
 
@@ -315,7 +347,7 @@ _match:
 		switch ( *_acts++ )
 		{
 	case 3:
-#line 203 "ragelAttempt1.rl"
+#line 236 "ragelAttempt1.rl"
 	{
             //res = 0;
             if (DEBUG) {
@@ -326,7 +358,8 @@ _match:
                 printf("cs is %d and foo_start is %d\n", cs, foo_start);
             }
 
-			numberList.clear();
+			// numberList.clear();
+			numberList = new vector<string>(10);
 			resetPatternList(tempPatternList);
 
             if (currentLength >= totalLength) {
@@ -338,7 +371,7 @@ _match:
             }
         }
 	break;
-#line 342 "build/ragelAttemp1.cpp"
+#line 375 "build/ragelAttemp1.cpp"
 		}
 	}
 
@@ -348,7 +381,7 @@ _again:
 	while ( _nacts-- > 0 ) {
 		switch ( *_acts++ ) {
 	case 0:
-#line 157 "ragelAttempt1.rl"
+#line 189 "ragelAttempt1.rl"
 	{
             if (DEBUG) {
                 cout << "Element -> " << (char) (*p) << endl;
@@ -363,7 +396,7 @@ _again:
         }
 	break;
 	case 1:
-#line 170 "ragelAttempt1.rl"
+#line 202 "ragelAttempt1.rl"
 	{
             res++;
 			if (!MINIMAL) {
@@ -374,13 +407,14 @@ _again:
 
 			resetPatternList(tempPatternList);
 
-			numberList.clear();
+			// numberList.clear();
+			numberList = new vector<string>(10);
 
             cs = foo_start;
             p--;
         }
 	break;
-#line 384 "build/ragelAttemp1.cpp"
+#line 418 "build/ragelAttemp1.cpp"
 		}
 	}
 
@@ -395,7 +429,7 @@ _again:
 	while ( __nacts-- > 0 ) {
 		switch ( *__acts++ ) {
 	case 3:
-#line 203 "ragelAttempt1.rl"
+#line 236 "ragelAttempt1.rl"
 	{
             //res = 0;
             if (DEBUG) {
@@ -406,7 +440,8 @@ _again:
                 printf("cs is %d and foo_start is %d\n", cs, foo_start);
             }
 
-			numberList.clear();
+			// numberList.clear();
+			numberList = new vector<string>(10);
 			resetPatternList(tempPatternList);
 
             if (currentLength >= totalLength) {
@@ -418,7 +453,7 @@ _again:
             }
         }
 	break;
-#line 422 "build/ragelAttemp1.cpp"
+#line 457 "build/ragelAttemp1.cpp"
 		}
 	}
 	}
@@ -426,15 +461,16 @@ _again:
 	_out: {}
 	}
 
-#line 230 "ragelAttempt1.rl"
+#line 264 "ragelAttempt1.rl"
 
 
 	if (!MINIMAL_2)	{
 		cout << "Finished processing \n\n";
 	}
 	
-	if (DEBUG) {
+	if (DEBUG || 0) {
 		cout << "Displaying internal pattern map per thread" << endl;
+		// #pragma omp critical
 		displayPatternList(patternMapInternal);
 	}
 
@@ -448,7 +484,7 @@ _again:
 		if (DEBUG) {
 			cout << "Merging internal and external list" << endl;
 		}
-		mergeList(patternMapInternal);
+		// mergeList(patternMapInternal);
 		if (DEBUG) {
 			cout << "Merge finished for Thread " << omp_get_thread_num() << endl;
 		}
@@ -456,7 +492,7 @@ _again:
 
 }
 
-int THREAD_COUNT = 40;
+int THREAD_COUNT = 8;
 const char delimiter = '|';
 vector<string> inputStream_per_thread;
 void chunkDivider(char *inp);
@@ -468,7 +504,7 @@ int main( int argc, char **argv )
 {
 	char *input;
 	if (FILEINPUT) {
-		ifstream myfile("../Benchmark/Synthetic/trace3.txt");
+		ifstream myfile("../Benchmark/Synthetic/trace6.txt");
 		string inp;
 		if (myfile.is_open()) {
 		while (getline(myfile, inp)) {
