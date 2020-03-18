@@ -54,3 +54,6 @@ dkms.conf
 # Trace files
 Benchmark/Synthetic/trace4.txt
 Benchmark/Synthetic/trace5.txt
+
+# Output file
+build/output
