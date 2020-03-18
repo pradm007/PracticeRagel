@@ -57,3 +57,4 @@ Benchmark/Synthetic/trace5.txt
 
 # Output file
 build/output
+build/
