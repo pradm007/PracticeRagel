@@ -23,13 +23,17 @@ using namespace std;
 const string numberListPattern = "[0-9]+";
 unordered_map<string, vector<vector<string> > > patternMap;
 
-int g_reserveSize = 1e+4;
+int g_reserveSize = 1e+7;
+const int CHUNK_DELIMITER_SIZE = 1e+5;
+int g_delimiterCount = 0;
 int g_totalCombination = 4;
 
+void releaseMemory(vector<vector<string> > &);
 
-#line 28 "ragelAttempt1.rl"
 
-#line 33 "build/ragelAttemp1.cpp"
+#line 32 "ragelAttempt1.rl"
+
+#line 37 "build/ragelAttemp1.cpp"
 static const char _foo_actions[] = {
 	0, 1, 0, 1, 2, 1, 3, 2, 
 	0, 1
@@ -88,7 +92,7 @@ static const int foo_error = 0;
 static const int foo_en_main = 1;
 
 
-#line 29 "ragelAttempt1.rl"
+#line 33 "ragelAttempt1.rl"
 
 string getString(char ch) { 
 	string temp = "";
@@ -98,10 +102,12 @@ string getString(char ch) {
 void insertIntoTempPatternList(string  &tempPatternList, char element, int *flipperOnEvent, vector<string> *numberList) {
 	if ((element >= 97 && element <= 122) ) { //its event
 		tempPatternList += element;
+		// tempPatternList.push_back(element);
 		*flipperOnEvent = 1;
 	} else { //its a number
 		if ((char) tempPatternList[tempPatternList.size() - 1] != (char) numberListPattern[numberListPattern.size() - 1]) {
 			tempPatternList += numberListPattern;
+			// tempPatternList.push_back(numberListPattern);
 		}
 		if (*flipperOnEvent == 1) {
 			//Add new vector for number tracing
@@ -127,7 +133,7 @@ void insertIntoPatternList(unordered_map<string, vector < vector<string > > > &p
 		}
 		vector<vector<string> > *newNumberList = new vector<vector<string> >;
 
-		newNumberList->reserve(10000);
+		// newNumberList->reserve(10000);
 		newNumberList->push_back(*numberList);
 		patternMap.emplace(fullPattern, *newNumberList);
 	}
@@ -204,6 +210,8 @@ void mergeList(unordered_map<string, vector<vector<string> > > &patternMapIntern
 			patternMap.emplace((string) itr->first,  *newNumberList);
 		}
 
+		// patternMapInternal.clear();
+		// releaseMemory(pMapInternalValue);
 		// free(pMapInternalValue);
 	}
 }
@@ -212,8 +220,9 @@ void mine_pattern(char *p) {
 	int cs, res = 0;
 	int totalLength = 0, currentLength = 0;
 	string numbersInPattern;
-	vector<string > *numberList = new vector<string>(10);	
+	vector<string > *numberList = new vector<string>;	
 	string tempPatternList;
+	tempPatternList.reserve(5);
 
 	int flipperOnEvent = 1; // flips to 0 in case of number
 
@@ -232,11 +241,11 @@ void mine_pattern(char *p) {
 	}
 
 	
-#line 236 "build/ragelAttemp1.cpp"
+#line 245 "build/ragelAttemp1.cpp"
 	{
 	}
 
-#line 240 "build/ragelAttemp1.cpp"
+#line 249 "build/ragelAttemp1.cpp"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -252,7 +261,7 @@ _resume:
 	while ( _nacts-- > 0 ) {
 		switch ( *_acts++ ) {
 	case 2:
-#line 202 "ragelAttempt1.rl"
+#line 211 "ragelAttempt1.rl"
 	{
             if ((*p) >= 48 && (*p) <= 57) {
 				if (flipperOnEvent == 1) { //Flipper added just to be safe
@@ -265,7 +274,7 @@ _resume:
             }
         }
 	break;
-#line 269 "build/ragelAttemp1.cpp"
+#line 278 "build/ragelAttemp1.cpp"
 		}
 	}
 
@@ -331,7 +340,7 @@ _match:
 		switch ( *_acts++ )
 		{
 	case 3:
-#line 220 "ragelAttempt1.rl"
+#line 229 "ragelAttempt1.rl"
 	{
             //res = 0;
             if (DEBUG) {
@@ -343,7 +352,7 @@ _match:
             }
 
 			// numberList.clear();
-			numberList = new vector<string>(10);
+			numberList = new vector<string>;
 			resetPatternList(tempPatternList);
 
             if (currentLength >= totalLength) {
@@ -355,7 +364,7 @@ _match:
             }
         }
 	break;
-#line 359 "build/ragelAttemp1.cpp"
+#line 368 "build/ragelAttemp1.cpp"
 		}
 	}
 
@@ -365,7 +374,7 @@ _again:
 	while ( _nacts-- > 0 ) {
 		switch ( *_acts++ ) {
 	case 0:
-#line 173 "ragelAttempt1.rl"
+#line 182 "ragelAttempt1.rl"
 	{
             if (DEBUG) {
                 cout << "Element -> " << (char) (*p) << endl;
@@ -380,7 +389,7 @@ _again:
         }
 	break;
 	case 1:
-#line 186 "ragelAttempt1.rl"
+#line 195 "ragelAttempt1.rl"
 	{
             res++;
 			if (!MINIMAL) {
@@ -392,13 +401,13 @@ _again:
 			resetPatternList(tempPatternList);
 
 			// numberList.clear();
-			numberList = new vector<string>(10);
+			numberList = new vector<string>;//
 
             cs = foo_start;
             p--;
         }
 	break;
-#line 402 "build/ragelAttemp1.cpp"
+#line 411 "build/ragelAttemp1.cpp"
 		}
 	}
 
@@ -413,7 +422,7 @@ _again:
 	while ( __nacts-- > 0 ) {
 		switch ( *__acts++ ) {
 	case 3:
-#line 220 "ragelAttempt1.rl"
+#line 229 "ragelAttempt1.rl"
 	{
             //res = 0;
             if (DEBUG) {
@@ -425,7 +434,7 @@ _again:
             }
 
 			// numberList.clear();
-			numberList = new vector<string>(10);
+			numberList = new vector<string>;
 			resetPatternList(tempPatternList);
 
             if (currentLength >= totalLength) {
@@ -437,7 +446,7 @@ _again:
             }
         }
 	break;
-#line 441 "build/ragelAttemp1.cpp"
+#line 450 "build/ragelAttemp1.cpp"
 		}
 	}
 	}
@@ -445,7 +454,7 @@ _again:
 	_out: {}
 	}
 
-#line 248 "ragelAttempt1.rl"
+#line 257 "ragelAttempt1.rl"
 
 
 	if (!MINIMAL_2)	{
@@ -455,7 +464,7 @@ _again:
 	if (DEBUG || 0) {
 		cout << "Displaying internal pattern map per thread" << endl;
 		// #pragma omp critical
-		// displayPatternList(patternMapInternal);
+		displayPatternList(patternMapInternal);
 	}
 
 	if (!MINIMAL_2) {
@@ -476,11 +485,17 @@ _again:
 
 }
 
+void releaseMemory(vector<vector<string> > &outVec) {
+	vector<vector<string> >().swap(outVec);
+}
+
+
 int THREAD_COUNT = 4;
 const char delimiter = '|';
 vector<string> inputStream_per_thread;
 void chunkDivider(char *inp);
-void initializeInputStreamPerThread();
+void showChunks();
+// void initializeInputStreamPerThread();
 void serialeExecution(char *);
 void parallelExecution(char *);
 
@@ -488,7 +503,7 @@ int main( int argc, char **argv )
 {
 	char *input;
 	if (FILEINPUT) {
-		ifstream myfile("../Benchmark/Synthetic/trace3.txt");
+		ifstream myfile("../Benchmark/Synthetic/trace4.txt");
 		string inp;
 		if (myfile.is_open()) {
 		while (getline(myfile, inp)) {
@@ -522,7 +537,9 @@ int main( int argc, char **argv )
 void chunkDivider(char *inp) {
 	int currentIndex = 0, currentThreadIndex = 0;
 	int isNumber = 0;
-	initializeInputStreamPerThread();
+	// initializeInputStreamPerThread();
+	inputStream_per_thread.push_back("");
+
 	while (inp[currentIndex] != '\0') {
 		if (inp[currentIndex] >= 48 && inp[currentIndex] <= 57) { //is a number
 			isNumber = 1;
@@ -531,9 +548,18 @@ void chunkDivider(char *inp) {
 			if (isNumber == 1) { // need to start feed to different thread chunk
 				inputStream_per_thread[currentThreadIndex] += inp[currentIndex];
 				inputStream_per_thread[currentThreadIndex] += delimiter;
+				g_delimiterCount++;
 
-				currentThreadIndex = (currentThreadIndex + 1) % THREAD_COUNT;
+				if (g_delimiterCount == CHUNK_DELIMITER_SIZE) { // start division for next chunk
+					currentThreadIndex = currentThreadIndex + 1;
+					g_delimiterCount = 0;
+					if (inp[currentIndex+1] != '\0') {
+						inputStream_per_thread.push_back("");
+					}
+				}
+
 				inputStream_per_thread[currentThreadIndex] += inp[currentIndex];
+
 			} else {
 				inputStream_per_thread[currentThreadIndex] += inp[currentIndex];
 			}
@@ -543,10 +569,9 @@ void chunkDivider(char *inp) {
 	}
 }
 
-void initializeInputStreamPerThread() {
-	for (int i=0;i<THREAD_COUNT;i++) {
-		string inpPerTh = "";
-		inputStream_per_thread.push_back(inpPerTh);
+void showChunks() {
+	for (int i=0;i<inputStream_per_thread.size();i++) {
+		cout << "Chunk " << (i+1) << " ~~~ " << inputStream_per_thread[i] <<endl;
 	}
 }
 
@@ -576,18 +601,26 @@ void parallelExecution(char *inp) {
 	printf("Finished chunk division in %.6f ms. \n", (1000 * (omp_get_wtime() - t)));
 
 	t = omp_get_wtime();
+	if (DEBUG || 0) {
+		showChunks();
+	}
+
 	#pragma omp parallel for num_threads(THREAD_COUNT) shared(patternMap, inputStream_per_thread) firstprivate(numberListPattern, g_reserveSize, g_totalCombination)
-	for (int i=0;i<THREAD_COUNT;i++) {
+	for (int i=0;i<inputStream_per_thread.size();i++) {
 		// cout << "Thread " << i << endl << "initiatng ... " << endl;
 		// cout << "Input is " << inputStream_per_thread[i].c_str() << endl;
 		// char inpPerThChar[inputStream_per_thread[i].size() + 1]; 
-		char *inpPerThChar = (char *) malloc(sizeof(char)*(inputStream_per_thread[i].size() + 1)); 
-		strcpy(inpPerThChar, inputStream_per_thread[i].c_str());
+
+		string chunkForThread = inputStream_per_thread[i];
+		// cout << chunkForThread << endl;
+		char *inpPerThChar = (char *) malloc(sizeof(char)*(chunkForThread.size() + 1)); 
+		strcpy(inpPerThChar, chunkForThread.c_str());
 		mine_pattern(inpPerThChar);
+		free(inpPerThChar);
 	}
 
 	cout << "Size of pattern Map " << patternMap.size() << endl;
-	// displayPatternList(patternMap);
+	displayPatternList(patternMap);
 
 	/* calculate and print processing time*/
 	t = 1000 * (omp_get_wtime() - t);
