@@ -21,7 +21,7 @@ using namespace std;
 const string numberListPattern = "[0-9]+";
 unordered_map<string, vector<vector<string> > > patternMap;
 
-int g_reserveSize = 1e+7;
+int g_reserveSize = 1e+4;
 int g_totalCombination = 4;
 
 %% machine foo;
@@ -56,20 +56,17 @@ void insertIntoPatternList(unordered_map<string, vector < vector<string > > > &p
 		if (!MINIMAL) {
 			cout << "Found " << fullPattern << endl;
 		}
-		vector<vector<string > > oldNumberList = itr->second;
-		oldNumberList.push_back(*numberList);
-
-		// patternMap[itr->first] = oldNumberList;
-		patternMap.emplace(itr->first, oldNumberList);
-
+		vector<vector<string > > *oldNumberList = &itr->second;
+		oldNumberList->push_back(*numberList);
 	} else {
 		if (!MINIMAL) {
 			cout << "Did not find " << fullPattern << " thus inserting new " << endl;
 		}
-		vector<vector<string> >  newNumberList;
-		newNumberList.reserve(10000);
-		newNumberList.push_back(*numberList);
-		patternMap.emplace(fullPattern, newNumberList);
+		vector<vector<string> > *newNumberList = new vector<vector<string> >;
+
+		newNumberList->reserve(10000);
+		newNumberList->push_back(*numberList);
+		patternMap.emplace(fullPattern, *newNumberList);
 	}
 
 }
@@ -114,7 +111,6 @@ void mergeList(unordered_map<string, vector<vector<string> > > &patternMapIntern
 		vector<vector<string> > pMapInternalValue = (vector<vector<string> >) itr->second;
 
 		if (is_in) { //Existing pattern
-			// vector<vector<string> >  oldNumberList = itr_global->second;
 			vector<vector<string> >  *oldNumberList = &itr_global->second;
 			
 			int oldSize = pMapInternalValue.size();
@@ -122,15 +118,11 @@ void mergeList(unordered_map<string, vector<vector<string> > > &patternMapIntern
 			// *oldNumberList.reserve(10000);
 
 			for (int i=0; i<pMapInternalValue.size();i++) {
-				// oldNumberList.push_back(pMapInternalValue[i]);
 				oldNumberList->push_back(pMapInternalValue[i]);
-				// ((vector<vector<string> >) itr->second)[oldSize + i] = oldNumberList[i];
 			}
 			// cout << "---------" << endl;
 			// displayPatternList_Internal(oldNumberList);
 			// cout << "---------" << endl;
-			// patternMap.at((string)itr->first) = oldNumberList;
-			patternMap.at((string)itr->first) = *oldNumberList;
 
 		} else { //Insert new pattern
 
@@ -148,6 +140,8 @@ void mergeList(unordered_map<string, vector<vector<string> > > &patternMapIntern
 			// patternMap.emplace((string) itr->first,  newNumberList);
 			patternMap.emplace((string) itr->first,  *newNumberList);
 		}
+
+		// free(pMapInternalValue);
 	}
 }
 
@@ -260,7 +254,7 @@ void mine_pattern(char *p) {
 	if (DEBUG || 0) {
 		cout << "Displaying internal pattern map per thread" << endl;
 		// #pragma omp critical
-		displayPatternList(patternMapInternal);
+		// displayPatternList(patternMapInternal);
 	}
 
 	if (!MINIMAL_2) {
@@ -281,7 +275,7 @@ void mine_pattern(char *p) {
 
 }
 
-int THREAD_COUNT = 8;
+int THREAD_COUNT = 4;
 const char delimiter = '|';
 vector<string> inputStream_per_thread;
 void chunkDivider(char *inp);
@@ -385,7 +379,8 @@ void parallelExecution(char *inp) {
 	for (int i=0;i<THREAD_COUNT;i++) {
 		// cout << "Thread " << i << endl << "initiatng ... " << endl;
 		// cout << "Input is " << inputStream_per_thread[i].c_str() << endl;
-		char inpPerThChar[inputStream_per_thread[i].size() + 1]; 
+		// char inpPerThChar[inputStream_per_thread[i].size() + 1]; 
+		char *inpPerThChar = (char *) malloc(sizeof(char)*(inputStream_per_thread[i].size() + 1)); 
 		strcpy(inpPerThChar, inputStream_per_thread[i].c_str());
 		mine_pattern(inpPerThChar);
 	}
