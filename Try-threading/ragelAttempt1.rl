@@ -290,12 +290,13 @@ void chunkDivider(char *inp);
 void showChunks();
 void serialeExecution(char *);
 void parallelExecution(char *);
+void chunkDivider(char *, int );
 
 int main( int argc, char **argv )
 {
 	char *input;
 	if (FILEINPUT) {
-		ifstream myfile("../Benchmark/Synthetic/trace1.txt");
+		ifstream myfile("../Benchmark/Synthetic/trace4.txt");
 		string inp;
 		if (myfile.is_open()) {
 		while (getline(myfile, inp)) {
@@ -326,31 +327,42 @@ int main( int argc, char **argv )
 	return 0;
 }
 
-void chunkDivider(char *inp) {
-	int currentIndex = 0, currentThreadIndex = 0;
+void chunkDivider_singular(char *inp, int quantPlaceholderCount=1) {
+	int currentIndex = 0, currentThreadIndex = inputStream_per_thread.size() - 1;
+	int currentQuantCount = 0;
 	int isNumber = 0;
 	// initializeInputStreamPerThread();
-	inputStream_per_thread.push_back("");
+	cout << inp << endl;
 
 	while (inp[currentIndex] != '\0') {
 		if (inp[currentIndex] >= 48 && inp[currentIndex] <= 57) { //is a number
+			if (isNumber == 0) { //Count quant only once for 
+				currentQuantCount++;
+			}
+
 			isNumber = 1;
 			inputStream_per_thread[currentThreadIndex] += inp[currentIndex];
 		} else { //is event
 			if (isNumber == 1) { // need to start feed to different thread chunk
 				inputStream_per_thread[currentThreadIndex] += inp[currentIndex];
-				inputStream_per_thread[currentThreadIndex] += delimiter;
-				g_delimiterCount++;
 
-				if (g_delimiterCount == CHUNK_DELIMITER_SIZE) { // start division for next chunk
-					currentThreadIndex = currentThreadIndex + 1;
-					g_delimiterCount = 0;
-					if (inp[currentIndex+1] != '\0') {
-						inputStream_per_thread.push_back("");
+				//when to apply delimited
+				if (currentQuantCount == quantPlaceholderCount) {
+					inputStream_per_thread[currentThreadIndex] += delimiter;
+					g_delimiterCount++;
+
+					if (g_delimiterCount == CHUNK_DELIMITER_SIZE) { // start division for next chunk
+						currentThreadIndex = currentThreadIndex + 1;
+						g_delimiterCount = 0;
+						if (inp[currentIndex+1] != '\0') {
+							inputStream_per_thread.push_back("");
+						}
 					}
-				}
 
-				inputStream_per_thread[currentThreadIndex] += inp[currentIndex];
+					inputStream_per_thread[currentThreadIndex] += inp[currentIndex];
+
+					currentQuantCount = 0;
+				}
 
 			} else {
 				inputStream_per_thread[currentThreadIndex] += inp[currentIndex];
@@ -359,7 +371,51 @@ void chunkDivider(char *inp) {
 		}
 		currentIndex++;
 	}
+
+	//Chop off the excess... iterate from the back
+	int last = inputStream_per_thread[currentThreadIndex].size() - 1;
+	while ((char)inputStream_per_thread[currentThreadIndex][last] != delimiter) {
+		printf("%c ", inputStream_per_thread[currentThreadIndex][last]);
+		last--;
+	}
+	inputStream_per_thread[currentThreadIndex] = inputStream_per_thread[currentThreadIndex].substr(0, last+1);
 }
+
+void chunkDivider(char *inp, int quantPlaceholderCount) {
+	// int currentIndex = 0, currentThreadIndex = 0;
+	// int startingMarker = 0;
+
+	inputStream_per_thread.push_back("");
+
+	for (int i=0;i<quantPlaceholderCount;i++) {
+		//Identify starting marker
+		char *startingMarker = inp;
+		int currentEventCount = 0, isEvent = 0;
+		int currentIndex = 0;
+
+		while(startingMarker[currentIndex] != '\0') {
+			if (startingMarker[currentIndex] >= 48 && startingMarker[currentIndex] <= 57) { //is a number
+				if (isEvent == 1) {
+					isEvent = 0;
+				}
+			} else {
+				if (isEvent == 0) {
+					isEvent = 1;
+					currentEventCount++;
+				}
+			}
+
+			if (currentEventCount == (i+1) ) {
+				break;//Use the current marker 
+			}
+
+			currentIndex++;
+		}
+
+		chunkDivider_singular(&startingMarker[currentIndex], quantPlaceholderCount);
+	}
+}
+
 
 void showChunks() {
 	for (int i=0;i<inputStream_per_thread.size();i++) {
@@ -397,11 +453,11 @@ void parallelExecution(char *inp) {
 
 	cout << "Initiating chunk division" << endl;
 	t = omp_get_wtime();
-	chunkDivider(inp);
+	chunkDivider(inp,2);
 	printf("Finished chunk division in %.6f ms. \n", (1000 * (omp_get_wtime() - t)));
 
 	t = omp_get_wtime();
-	if (DEBUG || 0) {
+	if (DEBUG || 1) {
 		showChunks();
 	}
 
