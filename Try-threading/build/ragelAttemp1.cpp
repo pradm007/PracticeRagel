@@ -31,13 +31,22 @@ int g_reserveSize = 1e+7;
 const int CHUNK_DELIMITER_SIZE = 1e+5;
 int g_delimiterCount = 0;
 int g_totalCombination = 4;
+int THREAD_COUNT = 16;
+const char delimiter = '|';
+vector<string> inputStream_per_thread;
 
+
+void chunkDivider(char *inp);
+void showChunks();
+void serialeExecution(char *);
+void parallelExecution(char *);
+void chunkDivider(char *, int );
 void releaseMemory(vector<vector<string> > &);
 
 
-#line 36 "ragelAttempt1.rl"
+#line 45 "ragelAttempt1.rl"
 
-#line 41 "build/ragelAttemp1.cpp"
+#line 50 "build/ragelAttemp1.cpp"
 static const char _foo_actions[] = {
 	0, 1, 0, 1, 2, 1, 3, 2, 
 	0, 1
@@ -96,12 +105,7 @@ static const int foo_error = 0;
 static const int foo_en_main = 1;
 
 
-#line 37 "ragelAttempt1.rl"
-
-string getString(char ch) { 
-	string temp = "";
-    return "" + ch;    
-} 
+#line 46 "ragelAttempt1.rl"
 
 void insertIntoTempPatternList(string  &tempPatternList, char element, int *flipperOnEvent, vector<string> *numberList) {
 	if ((element >= 97 && element <= 122) ) { //its event
@@ -206,9 +210,101 @@ void mergeList(unordered_map<string, vector<vector<string> > > &patternMapIntern
 			patternMap.emplace((string) itr->first,  *newNumberList);
 		}
 
-		// patternMapInternal.clear();
-		// releaseMemory(pMapInternalValue);
-		// free(pMapInternalValue);
+	}
+}
+
+void releaseMemory(vector<vector<string> > &outVec) {
+	vector<vector<string> >().swap(outVec);
+}
+
+void chunkDivider_singular(char *inp, int quantPlaceholderCount=1) {
+	int currentIndex = 0, currentThreadIndex = inputStream_per_thread.size() - 1;
+	int currentQuantCount = 0;
+	int isNumber = 0;
+
+	while (inp[currentIndex] != '\0') {
+		if (inp[currentIndex] >= 48 && inp[currentIndex] <= 57) { //is a number
+			if (isNumber == 0) { //Count quant only once for 
+				currentQuantCount++;
+			}
+
+			isNumber = 1;
+			inputStream_per_thread[currentThreadIndex] += inp[currentIndex];
+		} else { //is event
+			if (isNumber == 1) { // need to start feed to different thread chunk
+				inputStream_per_thread[currentThreadIndex] += inp[currentIndex];
+
+				//when to apply delimited
+				if (currentQuantCount == quantPlaceholderCount) {
+					inputStream_per_thread[currentThreadIndex] += delimiter;
+					g_delimiterCount++;
+
+					if (g_delimiterCount == CHUNK_DELIMITER_SIZE) { // start division for next chunk
+						currentThreadIndex = currentThreadIndex + 1;
+						g_delimiterCount = 0;
+						if (inp[currentIndex+1] != '\0') {
+							inputStream_per_thread.push_back("");
+						}
+					}
+
+					inputStream_per_thread[currentThreadIndex] += inp[currentIndex];
+
+					currentQuantCount = 0;
+				}
+
+			} else {
+				inputStream_per_thread[currentThreadIndex] += inp[currentIndex];
+			}
+			isNumber = 0;
+		}
+		currentIndex++;
+	}
+
+	//Chop off the excess... iterate from the back
+	int last = inputStream_per_thread[currentThreadIndex].size() - 1;
+	while ((char)inputStream_per_thread[currentThreadIndex][last] != delimiter) {
+		last--;
+	}
+	inputStream_per_thread[currentThreadIndex] = inputStream_per_thread[currentThreadIndex].substr(0, last+1);
+}
+
+void chunkDivider(char *inp, int quantPlaceholderCount) {
+
+	inputStream_per_thread.push_back("");
+
+	for (int i=0;i<quantPlaceholderCount;i++) {
+		//Identify starting marker
+		char *startingMarker = inp;
+		int currentEventCount = 0, isEvent = 0;
+		int currentIndex = 0;
+
+		while(startingMarker[currentIndex] != '\0') {
+			if (startingMarker[currentIndex] >= 48 && startingMarker[currentIndex] <= 57) { //is a number
+				if (isEvent == 1) {
+					isEvent = 0;
+				}
+			} else {
+				if (isEvent == 0) {
+					isEvent = 1;
+					currentEventCount++;
+				}
+			}
+
+			if (currentEventCount == (i+1) ) {
+				break;//Use the current marker 
+			}
+
+			currentIndex++;
+		}
+
+		chunkDivider_singular(&startingMarker[currentIndex], quantPlaceholderCount);
+	}
+}
+
+
+void showChunks() {
+	for (int i=0;i<inputStream_per_thread.size();i++) {
+		cout << "Chunk " << (i+1) << " ~~~ " << inputStream_per_thread[i] <<endl;
 	}
 }
 
@@ -230,18 +326,17 @@ void mine_pattern(char *p) {
 	if (!MINIMAL) {
 		printf("Input is %s \n",p);
 	}
-	// numberList.reserve(100);
 
 	if (!MINIMAL) {
 		printf("cs is %d and foo_start is %d\n", cs, foo_start);
 	}
 
 	
-#line 241 "build/ragelAttemp1.cpp"
+#line 336 "build/ragelAttemp1.cpp"
 	{
 	}
 
-#line 245 "build/ragelAttemp1.cpp"
+#line 340 "build/ragelAttemp1.cpp"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -257,7 +352,7 @@ _resume:
 	while ( _nacts-- > 0 ) {
 		switch ( *_acts++ ) {
 	case 2:
-#line 206 "ragelAttempt1.rl"
+#line 301 "ragelAttempt1.rl"
 	{
             if ((*p) >= 48 && (*p) <= 57) {
 				if (flipperOnEvent == 1) { //Flipper added just to be safe
@@ -270,7 +365,7 @@ _resume:
             }
         }
 	break;
-#line 274 "build/ragelAttemp1.cpp"
+#line 369 "build/ragelAttemp1.cpp"
 		}
 	}
 
@@ -336,7 +431,7 @@ _match:
 		switch ( *_acts++ )
 		{
 	case 3:
-#line 224 "ragelAttempt1.rl"
+#line 319 "ragelAttempt1.rl"
 	{
             //res = 0;
             if (DEBUG) {
@@ -359,7 +454,7 @@ _match:
             }
         }
 	break;
-#line 363 "build/ragelAttemp1.cpp"
+#line 458 "build/ragelAttemp1.cpp"
 		}
 	}
 
@@ -369,7 +464,7 @@ _again:
 	while ( _nacts-- > 0 ) {
 		switch ( *_acts++ ) {
 	case 0:
-#line 178 "ragelAttempt1.rl"
+#line 273 "ragelAttempt1.rl"
 	{
             if (DEBUG) {
                 cout << "Element -> " << (char) (*p) << endl;
@@ -384,7 +479,7 @@ _again:
         }
 	break;
 	case 1:
-#line 191 "ragelAttempt1.rl"
+#line 286 "ragelAttempt1.rl"
 	{
             res++;
 			if (!MINIMAL) {
@@ -401,7 +496,7 @@ _again:
             p--;
         }
 	break;
-#line 405 "build/ragelAttemp1.cpp"
+#line 500 "build/ragelAttemp1.cpp"
 		}
 	}
 
@@ -416,7 +511,7 @@ _again:
 	while ( __nacts-- > 0 ) {
 		switch ( *__acts++ ) {
 	case 3:
-#line 224 "ragelAttempt1.rl"
+#line 319 "ragelAttempt1.rl"
 	{
             //res = 0;
             if (DEBUG) {
@@ -439,7 +534,7 @@ _again:
             }
         }
 	break;
-#line 443 "build/ragelAttemp1.cpp"
+#line 538 "build/ragelAttemp1.cpp"
 		}
 	}
 	}
@@ -447,7 +542,7 @@ _again:
 	_out: {}
 	}
 
-#line 251 "ragelAttempt1.rl"
+#line 346 "ragelAttempt1.rl"
 
 
 	if (!MINIMAL_2)	{
@@ -478,25 +573,54 @@ _again:
 
 }
 
-void releaseMemory(vector<vector<string> > &outVec) {
-	vector<vector<string> >().swap(outVec);
+/**
+ * Function for parallel Execution
+ **/
+void parallelExecution(char *inp) {
+	
+	double t;
+
+	if (DEBUG) {
+		cout << "Initiating chunk division" << endl;
+	}
+	t = omp_get_wtime();
+	chunkDivider(inp,1);
+	if (DEBUG) {
+		printf("Finished chunk division in %.6f ms. \n", (1000 * (omp_get_wtime() - t)));
+	}
+
+	t = omp_get_wtime();
+	if (DEBUG) {
+		showChunks();
+	}
+
+	#pragma omp parallel for num_threads(THREAD_COUNT) shared(patternMap, inputStream_per_thread) firstprivate(numberListPattern, g_reserveSize, g_totalCombination)
+	for (int i=0;i<inputStream_per_thread.size();i++) {
+
+		string chunkForThread = inputStream_per_thread[i];
+		char *inpPerThChar = (char *) malloc(sizeof(char)*(chunkForThread.size() + 1)); 
+		strcpy(inpPerThChar, chunkForThread.c_str());
+		mine_pattern(inpPerThChar);
+		free(inpPerThChar);
+		chunkForThread.clear();
+		chunkForThread.shrink_to_fit();
+	}
+
+	if (DISPLAY_MAP) {
+		cout << "Size of pattern Map " << patternMap.size() << endl;
+		displayPatternList(patternMap);
+	}
+
+	/* calculate and print processing time*/
+	t = 1000 * (omp_get_wtime() - t);
+	printf("Finished in %.6f ms using %d threads. \n", t, THREAD_COUNT);
 }
-
-
-int THREAD_COUNT = 4;
-const char delimiter = '|';
-vector<string> inputStream_per_thread;
-void chunkDivider(char *inp);
-void showChunks();
-void serialeExecution(char *);
-void parallelExecution(char *);
-void chunkDivider(char *, int );
 
 int main( int argc, char **argv )
 {
 	char *input;
 	if (FILEINPUT) {
-		ifstream myfile("../Benchmark/Synthetic/trace4.txt");
+		ifstream myfile("../Benchmark/Synthetic/trace6.txt");
 		string inp;
 		if (myfile.is_open()) {
 		while (getline(myfile, inp)) {
@@ -514,10 +638,6 @@ int main( int argc, char **argv )
 		scanf("%s",input);
 	}
 
-	// cout << "For Serial " << endl;
-	// serialeExecution(input);
-	// cout << endl;
-
 	patternMap.clear();
 
 	cout << "For Parallel " << endl;
@@ -525,160 +645,4 @@ int main( int argc, char **argv )
 	cout << endl;
 
 	return 0;
-}
-
-void chunkDivider_singular(char *inp, int quantPlaceholderCount=1) {
-	int currentIndex = 0, currentThreadIndex = inputStream_per_thread.size() - 1;
-	int currentQuantCount = 0;
-	int isNumber = 0;
-	// initializeInputStreamPerThread();
-	cout << inp << endl;
-
-	while (inp[currentIndex] != '\0') {
-		if (inp[currentIndex] >= 48 && inp[currentIndex] <= 57) { //is a number
-			if (isNumber == 0) { //Count quant only once for 
-				currentQuantCount++;
-			}
-
-			isNumber = 1;
-			inputStream_per_thread[currentThreadIndex] += inp[currentIndex];
-		} else { //is event
-			if (isNumber == 1) { // need to start feed to different thread chunk
-				inputStream_per_thread[currentThreadIndex] += inp[currentIndex];
-
-				//when to apply delimited
-				if (currentQuantCount == quantPlaceholderCount) {
-					inputStream_per_thread[currentThreadIndex] += delimiter;
-					g_delimiterCount++;
-
-					if (g_delimiterCount == CHUNK_DELIMITER_SIZE) { // start division for next chunk
-						currentThreadIndex = currentThreadIndex + 1;
-						g_delimiterCount = 0;
-						if (inp[currentIndex+1] != '\0') {
-							inputStream_per_thread.push_back("");
-						}
-					}
-
-					inputStream_per_thread[currentThreadIndex] += inp[currentIndex];
-
-					currentQuantCount = 0;
-				}
-
-			} else {
-				inputStream_per_thread[currentThreadIndex] += inp[currentIndex];
-			}
-			isNumber = 0;
-		}
-		currentIndex++;
-	}
-
-	//Chop off the excess... iterate from the back
-	int last = inputStream_per_thread[currentThreadIndex].size() - 1;
-	while ((char)inputStream_per_thread[currentThreadIndex][last] != delimiter) {
-		printf("%c ", inputStream_per_thread[currentThreadIndex][last]);
-		last--;
-	}
-	inputStream_per_thread[currentThreadIndex] = inputStream_per_thread[currentThreadIndex].substr(0, last+1);
-}
-
-void chunkDivider(char *inp, int quantPlaceholderCount) {
-	// int currentIndex = 0, currentThreadIndex = 0;
-	// int startingMarker = 0;
-
-	inputStream_per_thread.push_back("");
-
-	for (int i=0;i<quantPlaceholderCount;i++) {
-		//Identify starting marker
-		char *startingMarker = inp;
-		int currentEventCount = 0, isEvent = 0;
-		int currentIndex = 0;
-
-		while(startingMarker[currentIndex] != '\0') {
-			if (startingMarker[currentIndex] >= 48 && startingMarker[currentIndex] <= 57) { //is a number
-				if (isEvent == 1) {
-					isEvent = 0;
-				}
-			} else {
-				if (isEvent == 0) {
-					isEvent = 1;
-					currentEventCount++;
-				}
-			}
-
-			if (currentEventCount == (i+1) ) {
-				break;//Use the current marker 
-			}
-
-			currentIndex++;
-		}
-
-		chunkDivider_singular(&startingMarker[currentIndex], quantPlaceholderCount);
-	}
-}
-
-
-void showChunks() {
-	for (int i=0;i<inputStream_per_thread.size();i++) {
-		cout << "Chunk " << (i+1) << " ~~~ " << inputStream_per_thread[i] <<endl;
-	}
-}
-
-/**
- * Function for serial execution
- **/
-void serialeExecution(char *inp) {
-
-  	double t = omp_get_wtime();
-	#pragma omp parallel num_threads(1)
-	{
-		mine_pattern(inp);
-	}
-
-	cout << "Size of pattern Map " << patternMap.size() << endl;
-	if (DISPLAY_MAP) {
-		displayPatternList(patternMap);
-	}
-
-	/* calculate and print processing time*/
-	t = 1000 * (omp_get_wtime() - t);
-	printf("Finished in %.6f ms. \n", t);
-}
-
-/**
- * Function for parallel Execution
- **/
-void parallelExecution(char *inp) {
-	
-	double t;
-
-	cout << "Initiating chunk division" << endl;
-	t = omp_get_wtime();
-	chunkDivider(inp,2);
-	printf("Finished chunk division in %.6f ms. \n", (1000 * (omp_get_wtime() - t)));
-
-	t = omp_get_wtime();
-	if (DEBUG || 1) {
-		showChunks();
-	}
-
-	#pragma omp parallel for num_threads(THREAD_COUNT) shared(patternMap, inputStream_per_thread) firstprivate(numberListPattern, g_reserveSize, g_totalCombination)
-	for (int i=0;i<inputStream_per_thread.size();i++) {
-
-		string chunkForThread = inputStream_per_thread[i];
-		char *inpPerThChar = (char *) malloc(sizeof(char)*(chunkForThread.size() + 1)); 
-		strcpy(inpPerThChar, chunkForThread.c_str());
-		mine_pattern(inpPerThChar);
-		free(inpPerThChar);
-		chunkForThread.clear();
-		chunkForThread.shrink_to_fit();
-	}
-
-	cout << "Size of pattern Map " << patternMap.size() << endl;
-	if (DISPLAY_MAP) {
-		displayPatternList(patternMap);
-	}
-
-	/* calculate and print processing time*/
-	t = 1000 * (omp_get_wtime() - t);
-	printf("Finished in %.6f ms. \n", t);
 }
