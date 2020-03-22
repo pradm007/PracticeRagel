@@ -2,6 +2,7 @@
 #include <bits/stdc++.h>
 #include <omp.h>
 using namespace std;
+
 #ifndef DEBUG
 #define DEBUG 0
 #endif
@@ -32,31 +33,37 @@ int g_totalCombination = 4;
 int THREAD_COUNT = 16;
 const char delimiter = '|';
 vector<string> inputStream_per_thread;
+int eventRepresentationLength = 1;
 
 
-void chunkDivider(char *inp);
+void chunkDivider_singular(char *inp, int, int);
 void showChunks();
 void serialeExecution(char *);
 void parallelExecution(char *);
-void chunkDivider(char *, int );
+void chunkDivider(char *, int , int);
 void releaseMemory(vector<vector<string> > &);
 
 %% machine foo;
 %% write data;
 
-void insertIntoTempPatternList(string  &tempPatternList, char element, int *flipperOnEvent, vector<string> *numberList) {
-	if ((element >= 97 && element <= 122) ) { //its event
+void insertIntoTempPatternList(string  &tempPatternList, char element, int *flipperOnEvent, int *currentEventRepresentationLength, vector<string> *numberList) {
+	
+	// cout << "insertIntoTempPatternList for element " << (char)element << " currentEventRepresentationLength = " << *currentEventRepresentationLength << endl;
+		
+	if ((element >= 97 && element <= 122) || (element >= 48 && element <= 57 && *currentEventRepresentationLength < eventRepresentationLength)) { //its event or its a number bbut needs to be considered as event
+	
+		if (element >= 97 && element <= 122) { //Set the event length to 1. DO NOT do this before this as it would be only correct to start event length check after matching the first alphabetical event character
+			*currentEventRepresentationLength = 0;
+			numberList->push_back(" "); //Add new vector for number tracing
+		}
+
 		tempPatternList += element;
-		// tempPatternList.push_back(element);
 		*flipperOnEvent = 1;
+		(*currentEventRepresentationLength)++;
 	} else { //its a number
 		if ((char) tempPatternList[tempPatternList.size() - 1] != (char) numberListPattern[numberListPattern.size() - 1]) {
 			tempPatternList += numberListPattern;
 			// tempPatternList.push_back(numberListPattern);
-		}
-		if (*flipperOnEvent == 1) {
-			//Add new vector for number tracing
-			numberList->push_back("");
 		}
 		*flipperOnEvent = 0;
 	}
@@ -85,8 +92,9 @@ void insertIntoPatternList(unordered_map<string, vector < vector<string > > > &p
 
 }
 
-void resetPatternList(string &tempPatternList) {
+void resetPatternList(string &tempPatternList, int* currentEventRepresentationLength) {
 	tempPatternList.clear();
+	*currentEventRepresentationLength = 0;
 }
 
 void displayPatternList_Internal(vector<vector<string> > &numberList) {
@@ -157,22 +165,45 @@ void releaseMemory(vector<vector<string> > &outVec) {
 void chunkDivider_singular(char *inp, int quantPlaceholderCount=1) {
 	int currentIndex = 0, currentThreadIndex = inputStream_per_thread.size() - 1;
 	int currentQuantCount = 0;
+	int currentEventRepresentationLength = 0;
 	int isNumber = 0;
 
 	while (inp[currentIndex] != '\0') {
+		// cout << "At currentIndex " << currentIndex << " currentEventRepresentationLength is " << currentEventRepresentationLength << endl;
 		if (inp[currentIndex] >= 48 && inp[currentIndex] <= 57) { //is a number
-			if (isNumber == 0) { //Count quant only once for 
+			if (isNumber == 0 && currentEventRepresentationLength < eventRepresentationLength) {
+				currentEventRepresentationLength++;
+			} else if (isNumber == 0) { //Count quant only once for 
 				currentQuantCount++;
+				isNumber = 1;
+				currentEventRepresentationLength = 0;
+			} else {
+				currentEventRepresentationLength = 0;
 			}
 
-			isNumber = 1;
 			inputStream_per_thread[currentThreadIndex] += inp[currentIndex];
 		} else { //is event
+			currentEventRepresentationLength++;
+
 			if (isNumber == 1) { // need to start feed to different thread chunk
 				inputStream_per_thread[currentThreadIndex] += inp[currentIndex];
 
+
 				//when to apply delimited
 				if (currentQuantCount == quantPlaceholderCount) {
+					// cout << "About to add delimiter currentEventRepresentationLength " << currentEventRepresentationLength << endl;
+					if (currentEventRepresentationLength < eventRepresentationLength) {
+						//Go till the end of the event representation, then do a break.
+						int innerCurrentIndex = currentIndex + 1;
+
+						while(inp[innerCurrentIndex] != '\0' && currentEventRepresentationLength < eventRepresentationLength) {
+							inputStream_per_thread[currentThreadIndex] += inp[innerCurrentIndex];
+							currentEventRepresentationLength++;
+							innerCurrentIndex++;
+						}
+						currentEventRepresentationLength= 0;//reset to zero for a new beginning
+					}
+
 					inputStream_per_thread[currentThreadIndex] += delimiter;
 					g_delimiterCount++;
 
@@ -185,6 +216,7 @@ void chunkDivider_singular(char *inp, int quantPlaceholderCount=1) {
 					}
 
 					inputStream_per_thread[currentThreadIndex] += inp[currentIndex];
+					currentEventRepresentationLength++;//increment again for new count after the delimiter
 
 					currentQuantCount = 0;
 				}
@@ -194,7 +226,9 @@ void chunkDivider_singular(char *inp, int quantPlaceholderCount=1) {
 			}
 			isNumber = 0;
 		}
+		// cout << "[END] At currentIndex " << currentIndex << " currentEventRepresentationLength is " << currentEventRepresentationLength << endl;
 		currentIndex++;
+
 	}
 
 	//Chop off the excess... iterate from the back
@@ -253,6 +287,7 @@ void mine_pattern(char *p) {
 	string tempPatternList;
 	tempPatternList.reserve(5);
 
+	int currentEventRepresentationLength = 0;
 	int flipperOnEvent = 1; // flips to 0 in case of number
 
 	unordered_map<string, vector<vector<string> > > patternMapInternal;
@@ -279,7 +314,7 @@ void mine_pattern(char *p) {
 			}
             currentLength++;
 			if ((fc >= 97 && fc <= 122) || (fc >= 48 && fc <= 57)) {
-				insertIntoTempPatternList(tempPatternList, (char) fc, &flipperOnEvent, numberList);
+				insertIntoTempPatternList(tempPatternList, (char) fc, &flipperOnEvent, &currentEventRepresentationLength, numberList);
 			}
         }
 
@@ -291,7 +326,7 @@ void mine_pattern(char *p) {
 
 			insertIntoPatternList(patternMapInternal, tempPatternList, numberList);
 
-			resetPatternList(tempPatternList);
+			resetPatternList(tempPatternList, &currentEventRepresentationLength);
 
 			numberList = new vector<string>;
 
@@ -300,10 +335,13 @@ void mine_pattern(char *p) {
         }
         action NUM {
             if (fc >= 48 && fc <= 57) {
-				if (flipperOnEvent == 1) { //Flipper added just to be safe
-					//Add new vector for number tracing
-					numberList->push_back("");
-					flipperOnEvent = 0;
+				// if (flipperOnEvent == 1) { //Flipper added just to be safe
+				// 	//Add new vector for number tracing
+				// 	numberList->push_back(" ");
+				// 	flipperOnEvent = 0;
+				// }
+				if (numberList->empty()) {
+					numberList->push_back(" ");
 				}
 
 				numberList->at(numberList->size() - 1) = numberList->at(numberList->size() - 1) + (char) fc;
@@ -327,7 +365,7 @@ void mine_pattern(char *p) {
             }
 
 			numberList = new vector<string>;
-			resetPatternList(tempPatternList);
+			resetPatternList(tempPatternList, &currentEventRepresentationLength);
 
             if (currentLength >= totalLength) {
                 // Force break... very bad practice
@@ -340,6 +378,7 @@ void mine_pattern(char *p) {
     
 
 		main := ((('a'([0-9]+ $from(NUM))'a') | ('a'([0-9]+ $from(NUM))'b') | ('a'([0-9]+ $from(NUM))'c') | ('a'([0-9]+ $from(NUM))'d'))+)$to(CHUNK) %to(A) $lerr(E);
+		#main := ((('a0'([0-9]+ $from(NUM))'a0') | ('a0'([0-9]+ $from(NUM))'b1') | ('a'([0-9]+ $from(NUM))'c0') | ('a0'([0-9]+ $from(NUM))'d0'))+)$to(CHUNK) %to(A) $lerr(E);
 
 		write init nocs;
 		write exec noend;
@@ -384,13 +423,14 @@ void parallelExecution(char *inp) {
 		cout << "Initiating chunk division" << endl;
 	}
 	t = omp_get_wtime();
+	eventRepresentationLength = 1;
 	chunkDivider(inp,1);
 	if (DEBUG) {
 		printf("Finished chunk division in %.6f ms. \n", (1000 * (omp_get_wtime() - t)));
 	}
 
 	t = omp_get_wtime();
-	if (DEBUG) {
+	if (DEBUG || 1) {
 		showChunks();
 	}
 
@@ -420,7 +460,7 @@ int main( int argc, char **argv )
 {
 	char *input;
 	if (FILEINPUT) {
-		ifstream myfile("../Benchmark/Synthetic/trace6.txt");
+		ifstream myfile("../Benchmark/Synthetic/trace7.txt");
 		string inp;
 		if (myfile.is_open()) {
 		while (getline(myfile, inp)) {
