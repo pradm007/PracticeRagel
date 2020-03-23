@@ -54,7 +54,7 @@ void insertIntoTempPatternList(string  &tempPatternList, char element, int *flip
 	
 		if (element >= 97 && element <= 122) { //Set the event length to 1. DO NOT do this before this as it would be only correct to start event length check after matching the first alphabetical event character
 			*currentEventRepresentationLength = 0;
-			numberList->push_back(" "); //Add new vector for number tracing
+			numberList->push_back(","); //Add new vector for number tracing
 		}
 
 		tempPatternList += element;
@@ -279,6 +279,42 @@ void showChunks() {
 	}
 }
 
+void writeToCSV(unordered_map<string, vector<vector<string> > > &patternMap) {
+	ofstream csvFile;
+	csvFile.open("./build/mine-map.csv");
+	csvFile << "Pattern,Numbers\n";
+	for (auto itr = patternMap.begin(); itr != patternMap.end(); itr++) {
+		string pattern = "" + (string) itr->first;
+
+
+		vector<vector<string> > numberList = itr->second;	
+		csvFile<<pattern<<endl;
+		for (int i =0; i < numberList.size(); i++) {
+			string tracedNumber="";
+			for (int j=0;j<numberList[i].size(); j++) {
+				tracedNumber += numberList[i][j];
+				// stringstream checkLine(tracedNumber);
+
+				// string newRepresentation = " ";
+				// string smallerChunk;
+				// while(getline(checkLine, smallerChunk, ' '))
+				// {
+				// 	if (!newRepresentation.empty()) {
+				// 		newRepresentation += ",";
+				// 	}
+				// 	newRepresentation += smallerChunk;
+				// }
+				// newRepresentation += "\n";
+				// csvFile << newRepresentation;
+			}
+			if (!tracedNumber.empty()) {
+				tracedNumber += "\n";
+				csvFile << tracedNumber;
+			}
+		}
+	}
+}
+
 void mine_pattern(char *p) {
 	int cs, res = 0;
 	int totalLength = 0, currentLength = 0;
@@ -341,7 +377,7 @@ void mine_pattern(char *p) {
 				// 	flipperOnEvent = 0;
 				// }
 				if (numberList->empty()) {
-					numberList->push_back(" ");
+					numberList->push_back(",");
 				}
 
 				numberList->at(numberList->size() - 1) = numberList->at(numberList->size() - 1) + (char) fc;
@@ -430,7 +466,7 @@ void parallelExecution(char *inp) {
 	}
 
 	t = omp_get_wtime();
-	if (DEBUG || 1) {
+	if (DEBUG || 0) {
 		showChunks();
 	}
 
@@ -450,6 +486,7 @@ void parallelExecution(char *inp) {
 		cout << "Size of pattern Map " << patternMap.size() << endl;
 		displayPatternList(patternMap);
 	}
+	writeToCSV(patternMap);
 
 	/* calculate and print processing time*/
 	t = 1000 * (omp_get_wtime() - t);
@@ -460,7 +497,7 @@ int main( int argc, char **argv )
 {
 	char *input;
 	if (FILEINPUT) {
-		ifstream myfile("../Benchmark/Synthetic/trace7.txt");
+		ifstream myfile("../Benchmark/Synthetic/trace1.txt");
 		string inp;
 		if (myfile.is_open()) {
 		while (getline(myfile, inp)) {

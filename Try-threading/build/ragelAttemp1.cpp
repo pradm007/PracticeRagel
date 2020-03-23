@@ -117,7 +117,7 @@ void insertIntoTempPatternList(string  &tempPatternList, char element, int *flip
 	
 		if (element >= 97 && element <= 122) { //Set the event length to 1. DO NOT do this before this as it would be only correct to start event length check after matching the first alphabetical event character
 			*currentEventRepresentationLength = 0;
-			numberList->push_back(" "); //Add new vector for number tracing
+			numberList->push_back(","); //Add new vector for number tracing
 		}
 
 		tempPatternList += element;
@@ -342,6 +342,42 @@ void showChunks() {
 	}
 }
 
+void writeToCSV(unordered_map<string, vector<vector<string> > > &patternMap) {
+	ofstream csvFile;
+	csvFile.open("./build/mine-map.csv");
+	csvFile << "Pattern,Numbers\n";
+	for (auto itr = patternMap.begin(); itr != patternMap.end(); itr++) {
+		string pattern = "" + (string) itr->first;
+
+
+		vector<vector<string> > numberList = itr->second;	
+		csvFile<<pattern<<endl;
+		for (int i =0; i < numberList.size(); i++) {
+			string tracedNumber="";
+			for (int j=0;j<numberList[i].size(); j++) {
+				tracedNumber += numberList[i][j];
+				// stringstream checkLine(tracedNumber);
+
+				// string newRepresentation = " ";
+				// string smallerChunk;
+				// while(getline(checkLine, smallerChunk, ' '))
+				// {
+				// 	if (!newRepresentation.empty()) {
+				// 		newRepresentation += ",";
+				// 	}
+				// 	newRepresentation += smallerChunk;
+				// }
+				// newRepresentation += "\n";
+				// csvFile << newRepresentation;
+			}
+			if (!tracedNumber.empty()) {
+				tracedNumber += "\n";
+				csvFile << tracedNumber;
+			}
+		}
+	}
+}
+
 void mine_pattern(char *p) {
 	int cs, res = 0;
 	int totalLength = 0, currentLength = 0;
@@ -367,11 +403,11 @@ void mine_pattern(char *p) {
 	}
 
 	
-#line 371 "build/ragelAttemp1.cpp"
+#line 407 "build/ragelAttemp1.cpp"
 	{
 	}
 
-#line 375 "build/ragelAttemp1.cpp"
+#line 411 "build/ragelAttemp1.cpp"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -387,7 +423,7 @@ _resume:
 	while ( _nacts-- > 0 ) {
 		switch ( *_acts++ ) {
 	case 2:
-#line 336 "ragelAttempt1.rl"
+#line 372 "ragelAttempt1.rl"
 	{
             if ((*p) >= 48 && (*p) <= 57) {
 				// if (flipperOnEvent == 1) { //Flipper added just to be safe
@@ -396,14 +432,14 @@ _resume:
 				// 	flipperOnEvent = 0;
 				// }
 				if (numberList->empty()) {
-					numberList->push_back(" ");
+					numberList->push_back(",");
 				}
 
 				numberList->at(numberList->size() - 1) = numberList->at(numberList->size() - 1) + (char) (*p);
             }
         }
 	break;
-#line 407 "build/ragelAttemp1.cpp"
+#line 443 "build/ragelAttemp1.cpp"
 		}
 	}
 
@@ -469,7 +505,7 @@ _match:
 		switch ( *_acts++ )
 		{
 	case 3:
-#line 357 "ragelAttempt1.rl"
+#line 393 "ragelAttempt1.rl"
 	{
             //res = 0;
             if (DEBUG) {
@@ -492,7 +528,7 @@ _match:
             }
         }
 	break;
-#line 496 "build/ragelAttemp1.cpp"
+#line 532 "build/ragelAttemp1.cpp"
 		}
 	}
 
@@ -502,7 +538,7 @@ _again:
 	while ( _nacts-- > 0 ) {
 		switch ( *_acts++ ) {
 	case 0:
-#line 308 "ragelAttempt1.rl"
+#line 344 "ragelAttempt1.rl"
 	{
             if (DEBUG) {
                 cout << "Element -> " << (char) (*p) << endl;
@@ -517,7 +553,7 @@ _again:
         }
 	break;
 	case 1:
-#line 321 "ragelAttempt1.rl"
+#line 357 "ragelAttempt1.rl"
 	{
             res++;
 			if (!MINIMAL) {
@@ -534,7 +570,7 @@ _again:
             p--;
         }
 	break;
-#line 538 "build/ragelAttemp1.cpp"
+#line 574 "build/ragelAttemp1.cpp"
 		}
 	}
 
@@ -549,7 +585,7 @@ _again:
 	while ( __nacts-- > 0 ) {
 		switch ( *__acts++ ) {
 	case 3:
-#line 357 "ragelAttempt1.rl"
+#line 393 "ragelAttempt1.rl"
 	{
             //res = 0;
             if (DEBUG) {
@@ -572,7 +608,7 @@ _again:
             }
         }
 	break;
-#line 576 "build/ragelAttemp1.cpp"
+#line 612 "build/ragelAttemp1.cpp"
 		}
 	}
 	}
@@ -580,7 +616,7 @@ _again:
 	_out: {}
 	}
 
-#line 385 "ragelAttempt1.rl"
+#line 421 "ragelAttempt1.rl"
 
 
 	if (!MINIMAL_2)	{
@@ -629,7 +665,7 @@ void parallelExecution(char *inp) {
 	}
 
 	t = omp_get_wtime();
-	if (DEBUG || 1) {
+	if (DEBUG || 0) {
 		showChunks();
 	}
 
@@ -649,6 +685,7 @@ void parallelExecution(char *inp) {
 		cout << "Size of pattern Map " << patternMap.size() << endl;
 		displayPatternList(patternMap);
 	}
+	writeToCSV(patternMap);
 
 	/* calculate and print processing time*/
 	t = 1000 * (omp_get_wtime() - t);
@@ -659,7 +696,7 @@ int main( int argc, char **argv )
 {
 	char *input;
 	if (FILEINPUT) {
-		ifstream myfile("../Benchmark/Synthetic/trace7.txt");
+		ifstream myfile("../Benchmark/Synthetic/trace1.txt");
 		string inp;
 		if (myfile.is_open()) {
 		while (getline(myfile, inp)) {
