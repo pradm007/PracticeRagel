@@ -97,6 +97,128 @@ void resetPatternList(string &tempPatternList, int* currentEventRepresentationLe
 	*currentEventRepresentationLength = 0;
 }
 
+string removeComma(string &input) {
+	string output;
+	for(int i=0;i<input.size();i++) {
+		if (input[i] != ',') {
+			output += input[i];
+		}
+	}
+
+	return output;
+}
+
+void loopAndPresentData(string &patternKey, vector<vector<string> > &numberList, string &regexPattern) {
+	vector<string> patternKeyMap;
+	int currentIndex = 0, bracketStart = 0;
+
+	if (DEBUG) {
+		cout << " patternKey " << patternKey << endl;
+	}
+
+	//This breaks the pattern key into sub elements
+	while(patternKey[currentIndex] != '\0') {
+		if (patternKey[currentIndex] != '[' && bracketStart == 0) {
+			if (patternKeyMap.empty()) {
+				string element (1, patternKey.at(currentIndex));
+				patternKeyMap.push_back(element);
+
+			} else {
+				int size = patternKeyMap.size();
+				patternKeyMap[size-1] += (char) patternKey.at(currentIndex);
+			}
+		} else {
+			//everything after the bracket for number mining starts
+			if (patternKey[currentIndex] == '[') {
+				bracketStart = 1;
+				patternKeyMap.push_back("");
+			} else if (patternKey[currentIndex] >= 97 && patternKey[currentIndex] <= 122) {
+				bracketStart = 0;
+				currentIndex--;
+			}
+		}
+		currentIndex++;
+
+	}
+
+	if (DEBUG) {
+		cout << "Partition done " << endl;
+		for (int i=0;i<patternKeyMap.size();i++) {
+			cout << patternKeyMap[i] << " ";
+		}
+		cout << endl;
+	}
+	
+	try {
+		vector<vector<double>> numberListInDouble;
+		for (int i =0; i < numberList.size(); i++) {
+				// printf("\tList %d : \n\t\t\t", i+1);
+				int start = 0;
+				string fullMatchedPattern;
+
+				for (int j=0;j<numberList[i].size(); j++) {
+					string numberIs = removeComma(numberList[i][j]);
+
+					if ( numberIs.size() > 0) {
+
+						if (start < patternKeyMap.size()) {
+							fullMatchedPattern += patternKeyMap[start++];
+						}
+						fullMatchedPattern += numberIs;
+					}
+				}
+
+				if (start < patternKeyMap.size()) { //flush the remainning, there should be only 1 pattern left at max
+					fullMatchedPattern += patternKeyMap[start++];
+				}
+
+				if (regex_match(fullMatchedPattern, regex(regexPattern)) ) {
+					if (DEBUG) {
+						cout << "Matched with " << regexPattern << endl;
+					}
+					vector<double> *innerList = new vector<double>;
+					for (int j=0;j<numberList[i].size(); j++) {
+						string innerNumber = removeComma(numberList[i][j]);
+						if (innerNumber.size() > 0) {
+							cout << "innerNumber " << innerNumber << endl;
+							innerList->push_back(stod(innerNumber));
+						}
+					}
+					numberListInDouble.push_back(*innerList);
+				} else {
+					if (DEBUG) {
+						cout << "Not matched with " << regexPattern << endl;
+					}
+				}
+
+		}
+
+		cout << "Inner pattern match completed. Total matches found : " << numberListInDouble.size() << endl;
+		if (numberListInDouble.size() > 0) {
+			int innerSize = numberListInDouble[0].size();
+			for (int j=0;j<innerSize;j++) {
+				long double MU = 0;
+				long double VAR = 0;
+				for (int i=0;i<numberListInDouble.size();i++) {
+					MU += (numberListInDouble[i][j] / numberListInDouble.size());
+				}
+
+				for (int i=0;i<numberListInDouble.size();i++) {
+					VAR += ( pow( (MU - numberListInDouble[i][j]) , 2) / numberListInDouble.size());
+				}
+
+				cout << "For placeholder at " << j+1 << " : " << endl;
+				cout << "\t Mean " << MU << endl;
+				cout << "\t Variance " << VAR << endl;
+				cout << endl;
+			}
+		}
+
+	} catch(exception& err) {
+		cout << " a standard exception was caught, with message '" << err.what() << "'\n";
+	}
+}
+
 void displayPatternList_Internal(vector<vector<string> > &numberList) {
 	for (int i =0; i < numberList.size(); i++) {
 			printf("\tList %d : \n\t\t\t", i+1);
@@ -448,6 +570,10 @@ void mine_pattern(char *p) {
 
 }
 
+int willingToQuit(string &input) {
+	return input.length() == 1 && (char) input[0] == 'N';
+}
+
 /**
  * Function for parallel Execution
  **/
@@ -491,13 +617,50 @@ void parallelExecution(char *inp) {
 	/* calculate and print processing time*/
 	t = 1000 * (omp_get_wtime() - t);
 	printf("Finished in %.6f ms using %d threads. \n", t, THREAD_COUNT);
+
+	int quit = 0;
+	string inputString = "";
+	while(!quit) {
+		cout << "Enter pattern that you are interested with specific event symbol (Enter N to quit) : ";
+		inputString = "a[0-9]+b";
+		// cin >> inputString;
+		if (willingToQuit(inputString)) {
+			cout << "Exiting..." << endl;
+			break;
+		}
+
+		auto itr = patternMap.find(inputString);
+		const bool is_in = itr != patternMap.end();
+		if (is_in) {
+			string inputString2 = "a[0-9]+b";
+			cout << "Enter interested regex (Enter N to quit) : " ;
+			// cin >> inputString2;
+			if (willingToQuit(inputString2)) {
+				cout << "Exiting..." << endl;
+				break;
+			}
+
+			vector<vector<string> > numberList = itr->second;
+			loopAndPresentData(inputString, numberList, inputString2);
+
+			cout << "Enter N to quit, anything else to continue : ";
+			cin >> inputString2;
+			if (willingToQuit(inputString2)) {
+				cout << "Exiting..." << endl;
+				break;
+			}
+		} else {
+			cout << "Pattern not found. Try again " << endl;
+		}
+	}
+
 }
 
 int main( int argc, char **argv )
 {
 	char *input;
 	if (FILEINPUT) {
-		ifstream myfile("../Benchmark/Synthetic/trace1.txt");
+		ifstream myfile("../Benchmark/Synthetic/trace7.txt");
 		string inp;
 		if (myfile.is_open()) {
 		while (getline(myfile, inp)) {
