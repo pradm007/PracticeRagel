@@ -31,7 +31,7 @@ unordered_map<string, vector<vector<string> > > patternMap;
 int g_reserveSize = 1e+7;
 const int CHUNK_DELIMITER_SIZE = 1e+5;
 int g_delimiterCount = 0;
-int g_totalCombination = 4;
+int g_totalCombination = 10;
 int THREAD_COUNT = 16;
 const char delimiter = '|';
 vector<string> inputStream_per_thread;
@@ -55,53 +55,68 @@ static const char _foo_actions[] = {
 };
 
 static const char _foo_key_offsets[] = {
-	0, 0, 1, 3, 7
+	0, 0, 1, 3, 6, 8, 11, 13, 
+	16, 18, 21, 23, 26, 28, 31
 };
 
 static const char _foo_trans_keys[] = {
-	97, 48, 57, 48, 57, 97, 100, 97, 
+	97, 48, 57, 98, 48, 57, 48, 57, 
+	99, 48, 57, 48, 57, 100, 48, 57, 
+	48, 57, 101, 48, 57, 48, 57, 102, 
+	48, 57, 48, 57, 103, 48, 57, 97, 
 	0
 };
 
 static const char _foo_single_lengths[] = {
-	0, 1, 0, 0, 1
+	0, 1, 0, 1, 0, 1, 0, 1, 
+	0, 1, 0, 1, 0, 1, 1
 };
 
 static const char _foo_range_lengths[] = {
-	0, 0, 1, 2, 0
+	0, 0, 1, 1, 1, 1, 1, 1, 
+	1, 1, 1, 1, 1, 1, 0
 };
 
 static const char _foo_index_offsets[] = {
-	0, 0, 2, 4, 7
+	0, 0, 2, 4, 7, 9, 12, 14, 
+	17, 19, 22, 24, 27, 29, 32
 };
 
 static const char _foo_indicies[] = {
-	1, 0, 2, 0, 2, 3, 0, 1, 
-	0, 0
+	1, 0, 2, 0, 3, 2, 0, 4, 
+	0, 5, 4, 0, 6, 0, 7, 6, 
+	0, 8, 0, 9, 8, 0, 10, 0, 
+	11, 10, 0, 12, 0, 13, 12, 0, 
+	1, 0, 0
 };
 
 static const char _foo_trans_targs[] = {
-	0, 2, 3, 4
+	0, 2, 3, 4, 5, 6, 7, 8, 
+	9, 10, 11, 12, 13, 14
 };
 
 static const char _foo_trans_actions[] = {
-	5, 0, 0, 0
+	5, 0, 0, 0, 0, 0, 0, 0, 
+	0, 0, 0, 0, 0, 0
 };
 
 static const char _foo_to_state_actions[] = {
-	0, 1, 1, 1, 7
+	0, 1, 1, 1, 1, 1, 1, 1, 
+	1, 1, 1, 1, 1, 1, 7
 };
 
 static const char _foo_from_state_actions[] = {
-	0, 0, 3, 3, 0
+	0, 0, 3, 3, 3, 3, 3, 3, 
+	3, 3, 3, 3, 3, 3, 0
 };
 
 static const char _foo_eof_actions[] = {
-	0, 5, 5, 5, 0
+	0, 5, 5, 5, 5, 5, 5, 5, 
+	5, 5, 5, 5, 5, 5, 0
 };
 
 static const int foo_start = 1;
-static const int foo_first_final = 4;
+static const int foo_first_final = 14;
 static const int foo_error = 0;
 
 static const int foo_en_main = 1;
@@ -184,7 +199,6 @@ void loopAndPresentData(string &patternKey, vector<vector<string> > &numberList,
 		if (patternKey[currentIndex] != '[' && bracketStart == 0) {
 			if (patternKeyMap.empty()) {
 				string element (1, patternKey.at(currentIndex));
-				cout << "~" << element << endl;
 				patternKeyMap.push_back(element);
 
 			} else {
@@ -205,11 +219,13 @@ void loopAndPresentData(string &patternKey, vector<vector<string> > &numberList,
 
 	}
 
-	cout << "Partition done " << endl;
-	for (int i=0;i<patternKeyMap.size();i++) {
-		cout << patternKeyMap[i] << " ";
+	if (DEBUG) {
+		cout << "Partition done " << endl;
+		for (int i=0;i<patternKeyMap.size();i++) {
+			cout << patternKeyMap[i] << " ";
+		}
+		cout << endl;
 	}
-	cout << endl;
 	
 	try {
 		vector<vector<double>> numberListInDouble;
@@ -524,11 +540,11 @@ void mine_pattern(char *p) {
 	}
 
 	
-#line 528 "build/ragelAttemp1.cpp"
+#line 544 "build/ragelAttemp1.cpp"
 	{
 	}
 
-#line 532 "build/ragelAttemp1.cpp"
+#line 548 "build/ragelAttemp1.cpp"
 	{
 	int _klen;
 	unsigned int _trans;
@@ -544,7 +560,7 @@ _resume:
 	while ( _nacts-- > 0 ) {
 		switch ( *_acts++ ) {
 	case 2:
-#line 493 "ragelAttempt1.rl"
+#line 494 "ragelAttempt1.rl"
 	{
             if ((*p) >= 48 && (*p) <= 57) {
 				// if (flipperOnEvent == 1) { //Flipper added just to be safe
@@ -560,7 +576,7 @@ _resume:
             }
         }
 	break;
-#line 564 "build/ragelAttemp1.cpp"
+#line 580 "build/ragelAttemp1.cpp"
 		}
 	}
 
@@ -626,7 +642,7 @@ _match:
 		switch ( *_acts++ )
 		{
 	case 3:
-#line 514 "ragelAttempt1.rl"
+#line 515 "ragelAttempt1.rl"
 	{
             //res = 0;
             if (DEBUG) {
@@ -649,7 +665,7 @@ _match:
             }
         }
 	break;
-#line 653 "build/ragelAttemp1.cpp"
+#line 669 "build/ragelAttemp1.cpp"
 		}
 	}
 
@@ -659,7 +675,7 @@ _again:
 	while ( _nacts-- > 0 ) {
 		switch ( *_acts++ ) {
 	case 0:
-#line 465 "ragelAttempt1.rl"
+#line 466 "ragelAttempt1.rl"
 	{
             if (DEBUG) {
                 cout << "Element -> " << (char) (*p) << endl;
@@ -674,7 +690,7 @@ _again:
         }
 	break;
 	case 1:
-#line 478 "ragelAttempt1.rl"
+#line 479 "ragelAttempt1.rl"
 	{
             res++;
 			if (!MINIMAL) {
@@ -691,7 +707,7 @@ _again:
             p--;
         }
 	break;
-#line 695 "build/ragelAttemp1.cpp"
+#line 711 "build/ragelAttemp1.cpp"
 		}
 	}
 
@@ -706,7 +722,7 @@ _again:
 	while ( __nacts-- > 0 ) {
 		switch ( *__acts++ ) {
 	case 3:
-#line 514 "ragelAttempt1.rl"
+#line 515 "ragelAttempt1.rl"
 	{
             //res = 0;
             if (DEBUG) {
@@ -729,7 +745,7 @@ _again:
             }
         }
 	break;
-#line 733 "build/ragelAttemp1.cpp"
+#line 749 "build/ragelAttemp1.cpp"
 		}
 	}
 	}
@@ -737,7 +753,7 @@ _again:
 	_out: {}
 	}
 
-#line 542 "ragelAttempt1.rl"
+#line 544 "ragelAttempt1.rl"
 
 
 	if (!MINIMAL_2)	{
@@ -783,7 +799,7 @@ void parallelExecution(char *inp) {
 		cout << "Initiating chunk division" << endl;
 	}
 	t = omp_get_wtime();
-	eventRepresentationLength = 1;
+	eventRepresentationLength = 9;
 	chunkDivider(inp,1);
 	if (DEBUG) {
 		printf("Finished chunk division in %.6f ms. \n", (1000 * (omp_get_wtime() - t)));
@@ -818,39 +834,39 @@ void parallelExecution(char *inp) {
 
 	int quit = 0;
 	string inputString = "";
-	while(!quit) {
-		cout << "Enter pattern that you are interested with specific event symbol (Enter N to quit) : ";
-		inputString = "a[0-9]+b";
-		// cin >> inputString;
-		if (willingToQuit(inputString)) {
-			cout << "Exiting..." << endl;
-			break;
-		}
+	// while(!quit) {
+	// 	cout << "Enter pattern that you are interested with specific event symbol (Enter N to quit) : ";
+	// 	inputString = "a[0-9]+b";
+	// 	// cin >> inputString;
+	// 	if (willingToQuit(inputString)) {
+	// 		cout << "Exiting..." << endl;
+	// 		break;
+	// 	}
 
-		auto itr = patternMap.find(inputString);
-		const bool is_in = itr != patternMap.end();
-		if (is_in) {
-			string inputString2 = "a[0-9]+b";
-			cout << "Enter interested regex (Enter N to quit) : " ;
-			// cin >> inputString2;
-			if (willingToQuit(inputString2)) {
-				cout << "Exiting..." << endl;
-				break;
-			}
+	// 	auto itr = patternMap.find(inputString);
+	// 	const bool is_in = itr != patternMap.end();
+	// 	if (is_in) {
+	// 		string inputString2 = "a[0-9]+b";
+	// 		cout << "Enter interested regex (Enter N to quit) : " ;
+	// 		// cin >> inputString2;
+	// 		if (willingToQuit(inputString2)) {
+	// 			cout << "Exiting..." << endl;
+	// 			break;
+	// 		}
 
-			vector<vector<string> > numberList = itr->second;
-			loopAndPresentData(inputString, numberList, inputString2);
+	// 		vector<vector<string> > numberList = itr->second;
+	// 		loopAndPresentData(inputString, numberList, inputString2);
 
-			cout << "Enter N to quit, anything else to continue : ";
-			cin >> inputString2;
-			if (willingToQuit(inputString2)) {
-				cout << "Exiting..." << endl;
-				break;
-			}
-		} else {
-			cout << "Pattern not found. Try again " << endl;
-		}
-	}
+	// 		cout << "Enter N to quit, anything else to continue : ";
+	// 		cin >> inputString2;
+	// 		if (willingToQuit(inputString2)) {
+	// 			cout << "Exiting..." << endl;
+	// 			break;
+	// 		}
+	// 	} else {
+	// 		cout << "Pattern not found. Try again " << endl;
+	// 	}
+	// }
 
 }
 
@@ -858,7 +874,8 @@ int main( int argc, char **argv )
 {
 	char *input;
 	if (FILEINPUT) {
-		ifstream myfile("../Benchmark/Synthetic/trace7.txt");
+		// ifstream myfile("../Benchmark/Synthetic/trace7.txt");
+		ifstream myfile("../DataSet/Arrythmia/arrhythmia_cleaned.data");
 		string inp;
 		if (myfile.is_open()) {
 		while (getline(myfile, inp)) {

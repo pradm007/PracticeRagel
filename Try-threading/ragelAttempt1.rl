@@ -29,7 +29,7 @@ unordered_map<string, vector<vector<string> > > patternMap;
 int g_reserveSize = 1e+7;
 const int CHUNK_DELIMITER_SIZE = 1e+5;
 int g_delimiterCount = 0;
-int g_totalCombination = 4;
+int g_totalCombination = 10;
 int THREAD_COUNT = 16;
 const char delimiter = '|';
 vector<string> inputStream_per_thread;
@@ -285,6 +285,8 @@ void releaseMemory(vector<vector<string> > &outVec) {
 }
 
 void chunkDivider_singular(char *inp, int quantPlaceholderCount=1) {
+	cout << "quantPlaceholderCount = " << quantPlaceholderCount << endl;
+	
 	int currentIndex = 0, currentThreadIndex = inputStream_per_thread.size() - 1;
 	int currentQuantCount = 0;
 	int currentEventRepresentationLength = 0;
@@ -326,6 +328,7 @@ void chunkDivider_singular(char *inp, int quantPlaceholderCount=1) {
 						currentEventRepresentationLength= 0;//reset to zero for a new beginning
 					}
 
+					cout << "Adding delimiter. " << inputStream_per_thread[currentThreadIndex] << endl;
 					inputStream_per_thread[currentThreadIndex] += delimiter;
 					g_delimiterCount++;
 
@@ -471,7 +474,7 @@ void mine_pattern(char *p) {
 				cout << "Chunk called " << endl;
 			}
             currentLength++;
-			if ((fc >= 97 && fc <= 122) || (fc >= 48 && fc <= 57)) {
+			if ((fc >= 97 && fc <= 122)) {// || (fc >= 48 && fc <= 57)) {
 				insertIntoTempPatternList(tempPatternList, (char) fc, &flipperOnEvent, &currentEventRepresentationLength, numberList);
 			}
         }
@@ -498,6 +501,7 @@ void mine_pattern(char *p) {
 				// 	numberList->push_back(" ");
 				// 	flipperOnEvent = 0;
 				// }
+				insertIntoTempPatternList(tempPatternList, (char) fc, &flipperOnEvent, &currentEventRepresentationLength, numberList);
 				if (numberList->empty()) {
 					numberList->push_back(",");
 				}
@@ -535,8 +539,9 @@ void mine_pattern(char *p) {
         }
     
 
-		main := ((('a'([0-9]+ $from(NUM))'a') | ('a'([0-9]+ $from(NUM))'b') | ('a'([0-9]+ $from(NUM))'c') | ('a'([0-9]+ $from(NUM))'d'))+)$to(CHUNK) %to(A) $lerr(E);
+		#main := ((('a'([0-9]+ $from(NUM))'a') | ('a'([0-9]+ $from(NUM))'b') | ('a'([0-9]+ $from(NUM))'c') | ('a'([0-9]+ $from(NUM))'d'))+)$to(CHUNK) %to(A) $lerr(E);
 		#main := ((('a0'([0-9]+ $from(NUM))'a0') | ('a0'([0-9]+ $from(NUM))'b1') | ('a'([0-9]+ $from(NUM))'c0') | ('a0'([0-9]+ $from(NUM))'d0'))+)$to(CHUNK) %to(A) $lerr(E);
+		main := ((('a'([0-9]+ $from(NUM))'b'([0-9]+ $from(NUM))'c'([0-9]+ $from(NUM))'d'([0-9]+ $from(NUM))'e'([0-9]+ $from(NUM))'f'([0-9]+ $from(NUM))'g'))+)$to(CHUNK) %to(A) $lerr(E);
 
 		write init nocs;
 		write exec noend;
@@ -585,7 +590,7 @@ void parallelExecution(char *inp) {
 		cout << "Initiating chunk division" << endl;
 	}
 	t = omp_get_wtime();
-	eventRepresentationLength = 1;
+	eventRepresentationLength = 9;
 	chunkDivider(inp,1);
 	if (DEBUG) {
 		printf("Finished chunk division in %.6f ms. \n", (1000 * (omp_get_wtime() - t)));
@@ -620,39 +625,39 @@ void parallelExecution(char *inp) {
 
 	int quit = 0;
 	string inputString = "";
-	while(!quit) {
-		cout << "Enter pattern that you are interested with specific event symbol (Enter N to quit) : ";
-		inputString = "a[0-9]+b";
-		// cin >> inputString;
-		if (willingToQuit(inputString)) {
-			cout << "Exiting..." << endl;
-			break;
-		}
+	// while(!quit) {
+	// 	cout << "Enter pattern that you are interested with specific event symbol (Enter N to quit) : ";
+	// 	inputString = "a[0-9]+b";
+	// 	// cin >> inputString;
+	// 	if (willingToQuit(inputString)) {
+	// 		cout << "Exiting..." << endl;
+	// 		break;
+	// 	}
 
-		auto itr = patternMap.find(inputString);
-		const bool is_in = itr != patternMap.end();
-		if (is_in) {
-			string inputString2 = "a[0-9]+b";
-			cout << "Enter interested regex (Enter N to quit) : " ;
-			// cin >> inputString2;
-			if (willingToQuit(inputString2)) {
-				cout << "Exiting..." << endl;
-				break;
-			}
+	// 	auto itr = patternMap.find(inputString);
+	// 	const bool is_in = itr != patternMap.end();
+	// 	if (is_in) {
+	// 		string inputString2 = "a[0-9]+b";
+	// 		cout << "Enter interested regex (Enter N to quit) : " ;
+	// 		// cin >> inputString2;
+	// 		if (willingToQuit(inputString2)) {
+	// 			cout << "Exiting..." << endl;
+	// 			break;
+	// 		}
 
-			vector<vector<string> > numberList = itr->second;
-			loopAndPresentData(inputString, numberList, inputString2);
+	// 		vector<vector<string> > numberList = itr->second;
+	// 		loopAndPresentData(inputString, numberList, inputString2);
 
-			cout << "Enter N to quit, anything else to continue : ";
-			cin >> inputString2;
-			if (willingToQuit(inputString2)) {
-				cout << "Exiting..." << endl;
-				break;
-			}
-		} else {
-			cout << "Pattern not found. Try again " << endl;
-		}
-	}
+	// 		cout << "Enter N to quit, anything else to continue : ";
+	// 		cin >> inputString2;
+	// 		if (willingToQuit(inputString2)) {
+	// 			cout << "Exiting..." << endl;
+	// 			break;
+	// 		}
+	// 	} else {
+	// 		cout << "Pattern not found. Try again " << endl;
+	// 	}
+	// }
 
 }
 
@@ -660,7 +665,8 @@ int main( int argc, char **argv )
 {
 	char *input;
 	if (FILEINPUT) {
-		ifstream myfile("../Benchmark/Synthetic/trace7.txt");
+		// ifstream myfile("../Benchmark/Synthetic/trace7.txt");
+		ifstream myfile("../DataSet/Arrythmia/arrhythmia_cleaned.data");
 		string inp;
 		if (myfile.is_open()) {
 		while (getline(myfile, inp)) {
