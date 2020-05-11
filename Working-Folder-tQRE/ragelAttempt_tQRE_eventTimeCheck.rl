@@ -22,7 +22,6 @@ int inputEventTime[2][2] = {{0,2},{0,2}};
 int inputQuantTime[1][2] = {{0,2}};
 
 int processingEventTime[2][2] = {{0,0},{0,0}}; // This stores entry and exit for each TRE event scope
-int processingQuantTime[1][2] = {{0,0}}; // This store exit-entry of TRE1-M-TRE2
 
 void printTimeEvent() {
 	
