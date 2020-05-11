@@ -18,10 +18,35 @@ vector<string> faultReason;;
 
 //Input Event Time
 int eventTRE_perInstance = 2;
-int inputEventTime[2][2] = {{0,2},{0,2}};
-int inputQuantTime[1][2] = {{0,2}};
+int inputEventTime[2][2] = {{0,20},{2,5}};
+int inputQuantTime[1][2] = {{0,10}};
 
 int processingEventTime[2][2] = {{0,0},{0,0}}; // This stores entry and exit for each TRE event scope
+
+int checkForFullAcceptance() {
+	//Check time bounds within TREs
+	for (int i=0; i<eventTRE_perInstance; i++) {
+		for (int j=0; j<2; j++) {
+			int time_diff = processingEventTime[i][1] - processingEventTime[i][0];
+			if (! (inputEventTime[i][0] <= time_diff && time_diff <= inputEventTime[i][1]) ) {
+				cout << "Time diff did not match for TRE"<<i<<endl;
+				return 0; // ERROR IN SCOPE
+			}
+		}
+	}
+	
+	//Check time bounds among TREs
+	for (int i=0; i<eventTRE_perInstance-1; i++) {
+		for (int j=0; j<2; j++) {
+			int time_diff = processingEventTime[i+1][0] - processingEventTime[i][1];
+			if (! (inputQuantTime[i][0] <= time_diff && time_diff <= inputQuantTime[i][1]) ) {
+				cout << "Time diff did not match among TRE"<<i<< " and TRE"<<(i+1)<<endl;
+				return 0; // ERROR IN SCOPE
+			}
+		}
+	}
+	return 1;
+}
 
 void printTimeEvent() {
 	
@@ -32,14 +57,6 @@ void printTimeEvent() {
 		}
 		cout << endl;
 	}
-	
-	/* cout << "Processing Event Exit-Entry Time --------" << endl;
-	for (int i=0; i<eventTRE_perInstance-1; i++) {
-		for (int j=0;j<2;j++) {
-			cout << processingEventTime[i][j] << " ";
-		}
-		cout << endl;
-	} */
 }
 
 %% machine foo;
@@ -164,7 +181,7 @@ void mine_pattern(char *p) {
 		
 		action ACCEPT {
 			//Accepting state
-			printf("Finally accepted\n");
+			printf("Partially accepted\n");
 			
 			//Should have hit exit state [NOTE: NOT A GOOD PLACE TO KEEP EVENT EXIT]
 			//Calculate and insertEventTime for this event
@@ -185,6 +202,11 @@ void mine_pattern(char *p) {
 			_eventTime = 0;
 			currentTRECount = 0;
 			_has_event_entered = 0; // Determines if we enter an event stage in TRE. Gets reset immediately at M stage
+			
+			int isFullyAccepted = checkForFullAcceptance();
+			if (isFullyAccepted) {
+				printf("Finally accepted\n");
+			}
 		}
 		
         action ERR {
@@ -243,9 +265,9 @@ int main( int argc, char **argv )
 		// sprintf(inp, "|1,a|2,4|7,b|10,8|4,7|15,b|8,9|32,c|");
 		// sprintf(inp, "|1,a|1.5,b|2,4|4,7|7,b|10,d|");
 		// sprintf(inp, "|1,a|15,b|2,4|7,b|10,d|");
-		sprintf(inp, "|1,a|15,b|2,4|7,b|10,d|1,1|"); //2event in TRE
-		sprintf(inp, "|1,a|15,b|19,c|2,4|3,5|7,b|10,d|15,2|1,1|"); // 3-2event in TRE - WORKS
-		sprintf(inp, "|1,a|15,b|19,c|2,4|3,5|7,b|10,d|15,c|1,1|"); // 3-3event in TRE = WORKS
+		// sprintf(inp, "|1,a|15,b|2,4|7,b|10,d|1,1|"); //2event in TRE
+		sprintf(inp, "|1,a|15,b|19,c|20,4|23,5|27,b|30,d|45,2|51,1|"); // 3-2event in TRE - WORKS
+		// sprintf(inp, "|1,a|15,b|19,c|2,4|3,5|7,b|10,d|15,c|1,1|"); // 3-3event in TRE = WORKS
 		// sprintf(inp, "|1,a|2,4|");
 	}
 	
