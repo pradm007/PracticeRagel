@@ -109,7 +109,7 @@ void mine_pattern(char *p) {
 			
 			_eventTime = 0;
 			
-			currentTRECount++; //Increment TRE instance counter
+			// currentTRECount++; //Increment TRE instance counter
 		}
 		
 		action TRACK_EVENT_TIME {
@@ -151,8 +151,12 @@ void mine_pattern(char *p) {
 				
 				currentTRECount++; //Increment TRE instance counter */
 				
-				_has_event_entered = 0; //Reset
+				if (_has_event_entered != 0) {
+					currentTRECount++; //Increment TRE instance counter only if _has_event_entered was true. This takes care of multiple quant fields
+					_has_event_entered = 0; //Reset
+				}
 				_eventTime = 0;
+				
             } else {
 				is_faulty |= 1;
 				faultReason.push_back("INVLD_NMBR");
@@ -165,6 +169,7 @@ void mine_pattern(char *p) {
 			
 			//Should have hit exit state [NOTE: NOT A GOOD PLACE TO KEEP EVENT EXIT]
 			//Calculate and insertEventTime for this event
+			cout << "_eventTime " << _eventTime << " previousEventTime " << previousEventTime << endl;
 			if (_eventTime == 0) { // 
 				processingEventTime[currentTRECount][1] = previousEventTime;
 			} else {
@@ -216,7 +221,8 @@ void mine_pattern(char *p) {
 		numberSection = ((delimiters)(NUM <to(IGNORE_TRACK_EVENT_TIME))(delimiters)(NUM <to(NUM)));
 		
 		
-		main := ((eventSection numberSection eventSection) $to(CHUNK) %to(ACCEPT) $lerr(ERR));
+		main := ((eventSection+ numberSection+ eventSection+ numberSection) $to(CHUNK) %to(ACCEPT) $lerr(ERR));
+		#main := ((eventSection eventSection numberSection eventSection eventSection) $to(CHUNK) %to(ACCEPT) $lerr(ERR));
 
 		write init nocs;
 		write exec noend;
@@ -234,10 +240,14 @@ int main( int argc, char **argv )
 		inp = argv[1];
 	} else {
 		// scanf("%s",inp);
-		// sprintf(inp, "1,a|1.5,b|2,4|4,7|7,b|10,d|");
-		sprintf(inp, "|1,a|2,4|7,b|10,8|4,7|15,b|8,9|32,c|");
-		// sprintf(inp, "1,a|1.5,b|2,4|4,7|7,b|10,d|");
-		// sprintf(inp, "1,a|2,4|");
+		// sprintf(inp, "|1,a|1.5,b|2,4|4,7|7,b|10,d|");
+		// sprintf(inp, "|1,a|2,4|7,b|10,8|4,7|15,b|8,9|32,c|");
+		// sprintf(inp, "|1,a|1.5,b|2,4|4,7|7,b|10,d|");
+		// sprintf(inp, "|1,a|15,b|2,4|7,b|10,d|");
+		sprintf(inp, "|1,a|15,b|2,4|7,b|10,d|1,1|"); //2event in TRE
+		sprintf(inp, "|1,a|15,b|19,c|2,4|3,5|7,b|10,d|15,2|1,1|"); // 3-2event in TRE - WORKS
+		sprintf(inp, "|1,a|15,b|19,c|2,4|3,5|7,b|10,d|15,c|1,1|"); // 3-3event in TRE = WORKS
+		// sprintf(inp, "|1,a|2,4|");
 	}
 	
 	mine_pattern(inp);
