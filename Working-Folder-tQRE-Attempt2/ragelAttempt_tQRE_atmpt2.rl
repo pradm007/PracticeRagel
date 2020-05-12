@@ -3,7 +3,7 @@
 #include <omp.h>
 using namespace std;
 #ifndef DEBUG
-#define DEBUG 0
+#define DEBUG 1
 #endif
 
 #ifndef MINIMAL
@@ -12,6 +12,10 @@ using namespace std;
 
 #ifndef MINIMAL_2
 #define MINIMAL_2 0
+#endif
+
+#ifndef DISPLAY_MAP
+#define DISPLAY_MAP 1
 #endif
 
 const string NUM_REGEX = "[0-9]+";
@@ -28,7 +32,9 @@ int inputQuantTime[1][2] = {{0,10}};
 int processingEventTime[2][2] = {{0,0},{0,0}}; // This stores entry and exit for each TRE event scope
 
 vector<string> inputEM_array, inputTime_array;
-int tokenCounter = -1;
+int tokenCounter = 0;
+unordered_map<string, vector<vector<string> > > patternMap; //Global shared map between threads
+int g_reserveSize = 1e+7; //Reserve space for new global unordered Map
 
 int checkForFullAcceptance() {
 	//Check time bounds within TREs
@@ -56,6 +62,14 @@ int checkForFullAcceptance() {
 }
 
 int getEventTime(int tokenCounter) {
+	/* cout << "tokenCounter " << tokenCounter << endl;
+	cout << "inputTime_array.size " << inputTime_array.size() << endl;
+	cout << "inputTime_array[tokenCounter] " << inputTime_array[tokenCounter] << endl;
+	
+	for (int i=0;i<inputTime_array.size();i++) {
+		cout << "--"<<inputTime_array[i] << endl;
+	} */
+	
 	return stoi(inputTime_array[tokenCounter]);
 }
 
@@ -102,6 +116,44 @@ void displayPatternList(unordered_map<string, vector<vector<string> > > &pattern
 		cout << " " << endl;
 	}
 }
+
+void mergeList(unordered_map<string, vector<vector<string> > > &patternMapInternal) {
+
+	for (auto itr = patternMapInternal.begin(); itr != patternMapInternal.end(); itr++) {
+		auto itr_global = patternMap.find((string) itr->first);
+		const bool is_in = itr_global != patternMap.end();
+
+		vector<vector<string> > pMapInternalValue = (vector<vector<string> >) itr->second;
+
+		if (is_in) { //Existing pattern
+			vector<vector<string> >  *oldNumberList = &itr_global->second;
+			
+			int oldSize = pMapInternalValue.size();
+
+			for (int i=0; i<pMapInternalValue.size();i++) {
+				oldNumberList->push_back(pMapInternalValue[i]);
+			}
+
+		} else { //Insert new pattern
+
+			int reserveSize = g_reserveSize > pMapInternalValue.size() ? g_reserveSize : pMapInternalValue.size();
+			vector<vector<string> >  *newNumberList = new vector<vector<string> >;
+			newNumberList->reserve(reserveSize);
+
+			// #pragma omp parallel for
+			for (int i=0; i<pMapInternalValue.size(); i++) {
+				newNumberList->push_back( pMapInternalValue.at(i) );
+			}
+
+			patternMap.emplace((string) itr->first,  *newNumberList);
+		}
+
+		// patternMapInternal.clear();
+		// releaseMemory(pMapInternalValue);
+		// free(pMapInternalValue);
+	}
+}
+
 /**
 * @param input Input string to be splited
 * @param isTimeOrEM Int value represent 1 for EM, 2 for Time , rest - Error
@@ -179,7 +231,7 @@ void mine_pattern(char *inputEM, char *inputTime) {
         action EVENT {
 			//Invoked for every event-character match
 			printf("\tEvent =%c \n",fc);
-			tokenCounter++; //Increase everytime there is an E/M
+			// tokenCounter++; //Increase everytime there is an E/M
 			_event_OR_quant_stage = 1;
 			
 			//Get Event Time
@@ -232,6 +284,7 @@ void mine_pattern(char *inputEM, char *inputTime) {
 		action DELIMITERS {
 			//Invoked for every delimiter-character match
 			printf("\tDelimiter-Character =%c \n",fc);
+			tokenCounter++; //Increase everytime there is an E/M.. now is decided based on space
 			
 			if (_event_OR_quant_stage == 2) {
 				//This would mean, the previous encounter was that of a Quant
@@ -254,7 +307,7 @@ void mine_pattern(char *inputEM, char *inputTime) {
         action NUM {
             if (fc >= 48 && fc <= 57) {
                 printf("\tNum =%c \n",fc);
-				tokenCounter++; //Increase everytime there is an E/M
+				// tokenCounter++; //Increase everytime there is an E/M
 				_event_OR_quant_stage = 2;
 				
 				_quantValue = _quantValue*10 + (fc - '0');
@@ -303,13 +356,12 @@ void mine_pattern(char *inputEM, char *inputTime) {
 			int isFullyAccepted = checkForFullAcceptance();
 			if (isFullyAccepted) {
 				printf("Finally accepted\n");
+				//Prune the previous M.
+				tempPatternList = tempPatternList.substr(0, tempPatternList.size()-3);
+				
+				// Insert into the pattern List
+				insertIntoPatternList(patternMapInternal, tempPatternList, numberList);
 			}
-			
-			//Prune the previous M.
-			tempPatternList = tempPatternList.substr(0, tempPatternList.size()-3);
-			
-			// Insert into the pattern List
-			insertIntoPatternList(patternMapInternal, tempPatternList, numberList);
 
 			//Reset more counters
 			tempPatternList.clear();
@@ -355,7 +407,7 @@ void mine_pattern(char *inputEM, char *inputTime) {
 		numberSection = ((delimiters)(NUM <to(NUM)));
 		
 		
-		main := ((eventSection+ numberSection+ eventSection+ numberSection) $to(CHUNK) %to(ACCEPT) $lerr(ERR));
+		main := ((eventSection+ numberSection+ eventSection+ ' |') $to(CHUNK) %to(ACCEPT) $lerr(ERR));
 		#main := ((eventSection eventSection numberSection eventSection eventSection) $to(CHUNK) %to(ACCEPT) $lerr(ERR));
 
 		write init nocs;
@@ -366,7 +418,7 @@ void mine_pattern(char *inputEM, char *inputTime) {
 		cout << "Finished processing \n\n";
 	}
 	
-	if (DEBUG || 1) {
+	if (DEBUG || 0) {
 		cout << "Displaying internal pattern map per thread" << endl;
 		#pragma omp critical
 		displayPatternList(patternMapInternal);
@@ -376,19 +428,185 @@ void mine_pattern(char *inputEM, char *inputTime) {
 		printf("For Thread %d \t", omp_get_thread_num());
 		printf("Pattern matched %d times\n", matched);
 	}
+	
+	#pragma omp critical
+	{
+		if (DEBUG) {
+			cout << "Merging internal and external list" << endl;
+		}
+		mergeList(patternMapInternal);
+		if (DEBUG) {
+			cout << "Merge finished for Thread " << omp_get_thread_num() << endl;
+		}
+	}
 
 }
 
+int isDigit(string digitChar_str) {
+	
+	char digitChar = digitChar_str[0];
+	int val = digitChar - '0';
+	return val >= 0 && val <= 9;
+}
+
+int isSpace(string spaceChar_str) {
+	char spaceChar = spaceChar_str[0];
+	return spaceChar == 32;
+}
+
+int isCharacter(string alphabetChar_str) {
+	
+	char alphabetChar = alphabetChar_str[0];
+	return alphabetChar >= 'a' && alphabetChar <= 'z';
+}
+
+vector<string> inputEM_Stream_per_thread, inputTime_Stream_per_thread;
+void chunkDivider(string inputEM, string inputTime) {
+	int currentThreadIndex = 0;
+	int leftPointer = 0, rightPointer = 0;
+	inputEM_Stream_per_thread.push_back("");
+	inputTime_Stream_per_thread.push_back("");
+	
+	int is_event_quant_stage = 0; // Flag : 0-space, 1-Event, 2-Quant
+	
+	int quantCount_perInstance = eventTRE_perInstance; // Taking 1 extra M just to be safe. This would could TRE M TRE as with 2 M so that we cut at TRE M TRE M
+	
+	int currentQuantCount_forInstance = 0;
+	
+	vector<string> _private_inputEM_array, _private_inputTime_array;
+	stringstream ssinEM(inputEM);
+    
+    while(ssinEM.good()) {
+		string _token;
+        ssinEM >> _token;
+		_private_inputEM_array.push_back(_token);
+    }
+	
+	stringstream ssinTime(inputTime);
+    
+    while(ssinTime.good()) {
+		string _token;
+        ssinTime >> _token;
+		_private_inputTime_array.push_back(_token);
+    }
+	
+	cout << "_private_inputEM_array.size() " << _private_inputEM_array.size() << endl;
+	cout << "_private_inputTime_array.size() " << _private_inputTime_array.size() << endl;
+	
+	while(rightPointer < _private_inputEM_array.size()) {
+		
+		// cout << _private_inputEM_array[rightPointer] << " rightPointer " << rightPointer << endl;
+		
+		if (isCharacter(_private_inputEM_array[rightPointer])) {
+			is_event_quant_stage = 1;
+		}
+		
+		if (rightPointer == (_private_inputEM_array.size()-2)) {
+			//Flush the current state
+			//We need to substring this chunk and add it to thread pool
+			string inputEM_chunk = " " ,inputTime_chunk = " ";
+			
+			int _lfP = leftPointer;
+			while(_lfP <= rightPointer) {
+				inputEM_chunk += _private_inputEM_array[_lfP] + " ";
+				inputTime_chunk += _private_inputTime_array[_lfP] + " ";
+				_lfP++;
+			}
+			inputEM_chunk += "| "; //To append final delimiter
+			inputTime_chunk += "0 "; //To append final delimiter
+			
+			inputEM_Stream_per_thread.push_back(inputEM_chunk);
+			inputTime_Stream_per_thread.push_back(inputTime_chunk);
+			
+			cout << "Must break now " << endl;
+			break;
+		}
+		
+		if (isCharacter(_private_inputEM_array[rightPointer]) && isDigit(_private_inputEM_array[rightPointer + 1])) {
+			if (is_event_quant_stage != 2) {
+				currentQuantCount_forInstance++;
+				is_event_quant_stage = 2;
+			}
+		}
+		
+		//Chunk this for a thread
+		if (currentQuantCount_forInstance == quantCount_perInstance) {
+			//We need to substring this chunk and add it to thread pool
+			string inputEM_chunk = " " ,inputTime_chunk = " ";
+			
+			int _lfP = leftPointer;
+			while(_lfP <= rightPointer) {
+				inputEM_chunk += _private_inputEM_array[_lfP] + " ";
+				inputTime_chunk += _private_inputTime_array[_lfP] + " ";
+				_lfP++;
+			}
+			inputEM_chunk += "| "; //To append final delimiter
+			inputTime_chunk += "0 "; //To append final delimiter
+			
+			inputEM_Stream_per_thread.push_back(inputEM_chunk);
+			inputTime_Stream_per_thread.push_back(inputTime_chunk);
+			
+			//Move the left pointer right-size to the next quant value
+			// int _lfP = leftPointer;
+
+			while(leftPointer <= rightPointer) {
+				if (isDigit(_private_inputEM_array[leftPointer]) && isCharacter(_private_inputEM_array[leftPointer + 1])) {
+					leftPointer = leftPointer + 1; // At space
+					currentQuantCount_forInstance--; // Decrement a quantCount
+					break;
+				}
+				leftPointer++;
+			}
+		}
+		
+		rightPointer++;
+	}
+}
+
+void showChunks() {
+	for (int i=0;i<inputEM_Stream_per_thread.size();i++) {
+		cout << "Chunk " << (i+1) << " ~~~ " << endl;
+		cout << "\t\t>>" << inputEM_Stream_per_thread[i] << "<<" << endl;
+		cout << "\t\t>>" << inputTime_Stream_per_thread[i] << "<<" << endl;
+	}
+}
 
 int main( int argc, char **argv )
 {
-	#pragma omp parallel for num_threads(1)
-	for (int i=0;i<1;i++) {
-		char *inputEM = (char *)malloc(INT_MAX * sizeof(char *));
-		char *inputTime = (char *)malloc(INT_MAX * sizeof(char *));
-		sprintf(inputEM, " a b c 4 5 b d 2 1 "); // 3-2event in TRE - WORKS with larger event identity
-		sprintf(inputTime, " 1 15 19 20 23 27 30 45 51 "); // 3-2event in TRE - WORKS
-		mine_pattern(inputEM, inputTime);
+	//Works with 
+	 // 3-2event in TRE - WORKS with larger event identity
+	 // 3-2event in TRE - WORKS
+	  
+	string inputEM_string = " a b c 4 5 b d 2 1 e 2 a 2 3 c 2";
+	string inputTime_string = " 1 15 19 20 23 27 30 45 51 52 53 54 55 56 58 60";
+	
+	chunkDivider(inputEM_string, inputTime_string);
+	cout << "Showing chunk " << endl;
+	if (DEBUG || 1) {
+		showChunks();
+	}
+	
+	#pragma omp parallel for num_threads(1) shared(patternMap, inputEM_Stream_per_thread, inputTime_Stream_per_thread) firstprivate(g_reserveSize, inputEM_array, inputTime_array, tokenCounter)
+	for (int i=0;i<inputEM_Stream_per_thread.size();i++) {
+		
+		string _inputEM_string = inputEM_Stream_per_thread[i];
+		string _inputTime_string = inputTime_Stream_per_thread[i];
+		
+		char *_inputEM_char = (char *)malloc(_inputEM_string.size()+1 * sizeof(char *));
+		char *_inputTime_char = (char *)malloc(_inputTime_string.size()+1 * sizeof(char *));
+		
+		strcpy(_inputEM_char, _inputEM_string.c_str());
+		strcpy(_inputTime_char, _inputTime_string.c_str());
+		
+		// cout << _inputEM_char << endl;
+		// cout << _inputTime_char << endl;
+		//Send char* to minePattern per thread
+		mine_pattern(_inputEM_char, _inputTime_char);
+	}
+	
+	cout << "Size of pattern Map " << patternMap.size() << endl;
+	if (DISPLAY_MAP) {
+		displayPatternList(patternMap);
 	}
 	
 	return 0;
