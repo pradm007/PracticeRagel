@@ -23,6 +23,9 @@ int inputQuantTime[1][2] = {{0,10}};
 
 int processingEventTime[2][2] = {{0,0},{0,0}}; // This stores entry and exit for each TRE event scope
 
+vector<string> inputEM_array, inputTime_array;
+int tokenCounter = -1;
+
 int checkForFullAcceptance() {
 	//Check time bounds within TREs
 	for (int i=0; i<eventTRE_perInstance; i++) {
@@ -48,6 +51,29 @@ int checkForFullAcceptance() {
 	return 1;
 }
 
+int getEventTime(int tokenCounter) {
+	return stoi(inputTime_array[tokenCounter]);
+}
+
+/**
+* @param input Input string to be splited
+* @param isTimeOrEM Int value represent 1 for EM, 2 for Time , rest - Error
+*/
+void stringToStringArray(char *char_input, int isTimeOrEM=0) {
+	string input(char_input);
+	stringstream ssin(input);
+    
+    while(ssin.good()) {
+		string _token;
+        ssin >> _token;
+		if (isTimeOrEM == 1) {
+			inputEM_array.push_back(_token);
+		} else if (isTimeOrEM == 2) {
+			inputTime_array.push_back(_token);
+		}
+    }
+}
+
 void printTimeEvent() {
 	
 	cout << "Processing Event Time --------" << endl;
@@ -62,17 +88,24 @@ void printTimeEvent() {
 %% machine foo;
 %% write data;
 
-void mine_pattern(char *p) {
+void mine_pattern(char *inputEM, char *inputTime) {
 	int cs, res = 0;
+	char* p = inputEM;
+	
 	int totalLength = 0, currentLength = 0;
 
 	cs = foo_start;
-	totalLength = strlen(p);
+	totalLength = strlen(inputEM);
 	
 	char *eof;
 	if (!MINIMAL) {
-		printf("Input is %s \n",p);
+		printf("Input EM %s \n",inputEM);
+		printf("Input Time %s \n",inputTime);
 	}
+	
+	stringToStringArray(inputEM, 1);
+	stringToStringArray(inputTime, 2);
+	
 	printf("cs is %d and foo_start is %d\n", cs, foo_start);
 	
 	int previousEventTime=0;
@@ -92,6 +125,9 @@ void mine_pattern(char *p) {
         action EVENT {
 			//Invoked for every event-character match
 			printf("\tEvent =%c \n",fc);
+			tokenCounter++; //Increase everytime there is an E/M
+			
+			_eventTime = getEventTime(tokenCounter);
 			
 			//Calculate and insertEventTime for this event
 			if (_has_event_entered == 0) {
@@ -103,16 +139,9 @@ void mine_pattern(char *p) {
 			_eventTime = 0;
         }
 		
-		action EVENT_ENTRY {
-			//Kind of unnecessary
-			//Calculate and insertEventTime for this event
-			previousEventTime = _eventTime;
-			processingEventTime[currentTRECount][0] = _eventTime;
-			
-			_eventTime = 0;
-		}
-		
 		action EVENT_EXIT {
+			_eventTime = getEventTime(tokenCounter);
+			
 			//Can only be understood if it enters a quantitative state BUT problem with last TRE instance as there would not be any quantitative state following
 			//Calculate and insertEventTime for this event
 			if (_eventTime == 0) { // 
@@ -128,26 +157,11 @@ void mine_pattern(char *p) {
 			// currentTRECount++; //Increment TRE instance counter
 		}
 		
-		action TRACK_EVENT_TIME {
-			//Invoked for every time-character match and which needs to be tracked
-			printf("\tTime-Character =%c \n",fc);
-			
-			//Track event time
-			if (fc >= 48 && fc <= 57) {
-				_eventTime = _eventTime*10 + (fc - '0');
-				cout << "_eventTime " << _eventTime << endl;
-			} else {
-				is_faulty |= 1;
-				faultReason.push_back("INVLD_TIME");
-			}
-			
+        action EVENT_IDENTITY {
+			//Will only be invoked in case of events such as a01 or b02 where 01,02 would be the event identity
+			printf("\tEvent Identity =%c \n",fc);
 		}
 		
-		action IGNORE_TRACK_EVENT_TIME {
-			//Invoked for every time-character match and which need NOT to be tracked
-			printf("\tNon-Tracking Time-Character =%c \n",fc);
-			
-		}
 		
 		action DELIMITERS {
 			//Invoked for every delimiter-character match
@@ -158,6 +172,7 @@ void mine_pattern(char *p) {
         action NUM {
             if (fc >= 48 && fc <= 57) {
                 printf("\tNum =%c \n",fc);
+				tokenCounter++; //Increase everytime there is an E/M
 				
 				/* //Can only be understood if it enters a quantitative state
 				//Calculate and insertEventTime for this event
@@ -235,11 +250,11 @@ void mine_pattern(char *p) {
 		FLOAT_REGEX = /[0-9]*\.?[0-9]+/;
 		NUM = [0-9]+;
 		EVENTREP = [a-z]+;
-		delimiters = [,|] <to(DELIMITERS);
-		subeventSection = ((delimiters)(NUM <to(TRACK_EVENT_TIME))(delimiters)(lower <to(EVENT) ));
+		delimiters = space <to(DELIMITERS);
+		subeventSection = ((delimiters)((lower) <to(EVENT) )([0-9]{0} <to(EVENT_IDENTITY)));
 		
 		eventSection = (subeventSection %from(EVENT_EXIT));
-		numberSection = ((delimiters)(NUM <to(IGNORE_TRACK_EVENT_TIME))(delimiters)(NUM <to(NUM)));
+		numberSection = ((delimiters)(NUM <to(NUM)));
 		
 		
 		main := ((eventSection+ numberSection+ eventSection+ numberSection) $to(CHUNK) %to(ACCEPT) $lerr(ERR));
@@ -256,25 +271,17 @@ void mine_pattern(char *p) {
 int main( int argc, char **argv )
 {
 	// char *inp;
-	char *inp = (char *)malloc(INT_MAX * sizeof(char *));
-	if (argc >= 2) {
-		inp = argv[1];
-	} else {
-		// scanf("%s",inp);
-		// sprintf(inp, "|1,a|1.5,b|2,4|4,7|7,b|10,d|");
-		// sprintf(inp, "|1,a|2,4|7,b|10,8|4,7|15,b|8,9|32,c|");
-		// sprintf(inp, "|1,a|1.5,b|2,4|4,7|7,b|10,d|");
-		// sprintf(inp, "|1,a|15,b|2,4|7,b|10,d|");
-		// sprintf(inp, "|1,a|15,b|2,4|7,b|10,d|1,1|"); //2event in TRE
-		sprintf(inp, "|1,a|15,b|19,c|20,4|23,5|27,b|30,d|45,2|51,1|"); // 3-2event in TRE - WORKS
-		// sprintf(inp, "|1,a|15,b|19,c|2,4|3,5|7,b|10,d|15,c|1,1|"); // 3-3event in TRE = WORKS
-		// sprintf(inp, "|1,a|2,4|");
-	}
+	char *inputEM = (char *)malloc(INT_MAX * sizeof(char *));
+	char *inputTime = (char *)malloc(INT_MAX * sizeof(char *));
+	// if (argc >= 2) { //Invalid for now due to the format we are taking input
+	// 	inputEM = argv[1];
+	// 	inputEM = argv[2];
+	// } else {
+		sprintf(inputEM, " a b c 4 5 b d 2 1 "); // 3-2event in TRE - WORKS with larger event identity
+		// sprintf(inputEM, " a11 b32 c31 4 5 b11 d01 2 1 "); // 3-2event in TRE - WORKS
+		sprintf(inputTime, " 1 15 19 20 23 27 30 45 51 "); // 3-2event in TRE - WORKS
+	// }
 	
-	mine_pattern(inp);
+	mine_pattern(inputEM, inputTime);
 	return 0;
 }
-
-/*Input 
-1,a|1.5,b|2,4|4,7|7,b|10,d|
-*/

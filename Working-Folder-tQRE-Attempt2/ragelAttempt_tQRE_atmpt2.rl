@@ -1,5 +1,6 @@
 
 #include <bits/stdc++.h>
+#include <omp.h>
 using namespace std;
 #ifndef DEBUG
 #define DEBUG 0
@@ -9,6 +10,9 @@ using namespace std;
 #define MINIMAL 0
 #endif
 
+#ifndef MINIMAL_2
+#define MINIMAL_2 0
+#endif
 
 const string NUM_REGEX = "[0-9]+";
 const string FLOAT_REGEX = "[0-9]*\.?[0-9]+";
@@ -55,6 +59,49 @@ int getEventTime(int tokenCounter) {
 	return stoi(inputTime_array[tokenCounter]);
 }
 
+void insertIntoPatternList(unordered_map<string, vector < vector<string > > > &patternMap, string  &fullPattern, vector<string > *numberList) {
+
+	auto itr = patternMap.find(fullPattern);
+	const bool is_in = itr != patternMap.end();
+	if (is_in) {
+		if (!MINIMAL) {
+			cout << "Found " << fullPattern << endl;
+		}
+		vector<vector<string > > *oldNumberList = &itr->second;
+		oldNumberList->push_back(*numberList);
+	} else {
+		if (!MINIMAL) {
+			cout << "Did not find " << fullPattern << " thus inserting new " << endl;
+		}
+		vector<vector<string> > *newNumberList = new vector<vector<string> >;
+
+		// newNumberList->reserve(10000);
+		newNumberList->push_back(*numberList);
+		patternMap.emplace(fullPattern, *newNumberList);
+	}
+
+}
+
+void displayPatternList_Internal(vector<vector<string> > &numberList) {
+	for (int i =0; i < numberList.size(); i++) {
+			printf("\tList %d : \n\t\t\t", i+1);
+			for (int j=0;j<numberList[i].size(); j++) {
+				cout << numberList[i][j];
+			}
+			printf("\n");
+		}
+}
+
+void displayPatternList(unordered_map<string, vector<vector<string> > > &patternMap) {
+	for (auto itr = patternMap.begin(); itr != patternMap.end(); itr++) {
+		
+		string pattern = "" + (string) itr->first;
+		cout << pattern << " :\n";
+		vector<vector<string> > numberList = itr->second;	
+		displayPatternList_Internal(numberList);
+		cout << " " << endl;
+	}
+}
 /**
 * @param input Input string to be splited
 * @param isTimeOrEM Int value represent 1 for EM, 2 for Time , rest - Error
@@ -89,11 +136,15 @@ void printTimeEvent() {
 %% write data;
 
 void mine_pattern(char *inputEM, char *inputTime) {
-	int cs, res = 0;
+	int cs, matched = 0;
 	char* p = inputEM;
 	
 	int totalLength = 0, currentLength = 0;
-
+	vector<string > *numberList = new vector<string>;	
+	string tempPatternList;
+	tempPatternList.reserve(100);
+	unordered_map<string, vector<vector<string> > > patternMapInternal;
+	
 	cs = foo_start;
 	totalLength = strlen(inputEM);
 	
@@ -110,8 +161,11 @@ void mine_pattern(char *inputEM, char *inputTime) {
 	
 	int previousEventTime=0;
 	int _eventTime = 0;
+	int _quantValue = 0;
 	int currentTRECount = 0;
 	int _has_event_entered = 0; // Determines if we enter an event stage in TRE. Gets reset immediately at M stage
+	int _event_OR_quant_stage = 0; //Flips between 0 - unknown, 1 - Event, 2 - Quant
+	int _event_OR_quant = 0;// Flips between 1 - Event, 2 - Quant
 	
 
 	%%{
@@ -126,7 +180,9 @@ void mine_pattern(char *inputEM, char *inputTime) {
 			//Invoked for every event-character match
 			printf("\tEvent =%c \n",fc);
 			tokenCounter++; //Increase everytime there is an E/M
+			_event_OR_quant_stage = 1;
 			
+			//Get Event Time
 			_eventTime = getEventTime(tokenCounter);
 			
 			//Calculate and insertEventTime for this event
@@ -137,9 +193,15 @@ void mine_pattern(char *inputEM, char *inputTime) {
 			previousEventTime = _eventTime;
 			
 			_eventTime = 0;
+			
+			//Insert into pattern list
+			tempPatternList += (char) fc;
         }
 		
 		action EVENT_EXIT {
+			_event_OR_quant_stage = 1;
+			
+			//Get Event Time
 			_eventTime = getEventTime(tokenCounter);
 			
 			//Can only be understood if it enters a quantitative state BUT problem with last TRE instance as there would not be any quantitative state following
@@ -154,12 +216,16 @@ void mine_pattern(char *inputEM, char *inputTime) {
 			
 			_eventTime = 0;
 			
-			// currentTRECount++; //Increment TRE instance counter
 		}
 		
         action EVENT_IDENTITY {
 			//Will only be invoked in case of events such as a01 or b02 where 01,02 would be the event identity
 			printf("\tEvent Identity =%c \n",fc);
+			_event_OR_quant_stage = 1;
+			
+			
+			//Insert into pattern list
+			tempPatternList += (char) fc;
 		}
 		
 		
@@ -167,20 +233,31 @@ void mine_pattern(char *inputEM, char *inputTime) {
 			//Invoked for every delimiter-character match
 			printf("\tDelimiter-Character =%c \n",fc);
 			
+			if (_event_OR_quant_stage == 2) {
+				//This would mean, the previous encounter was that of a Quant
+				numberList->push_back("");
+				numberList->push_back(to_string(_quantValue));
+				_quantValue = 0;
+			}
+			
+			if (_event_OR_quant_stage == 1) {
+				//Insert into pattern list
+				tempPatternList += '.';
+			}
+			
+			if (_event_OR_quant_stage != 0) {
+				_event_OR_quant = _event_OR_quant_stage;
+				_event_OR_quant_stage = 0;
+			}
 		}
 		
         action NUM {
             if (fc >= 48 && fc <= 57) {
                 printf("\tNum =%c \n",fc);
 				tokenCounter++; //Increase everytime there is an E/M
+				_event_OR_quant_stage = 2;
 				
-				/* //Can only be understood if it enters a quantitative state
-				//Calculate and insertEventTime for this event
-				previousEventTime = _eventTime;
-				processingEventTime[currentTRECount][1] = _eventTime;
-				_eventTime = 0;
-				
-				currentTRECount++; //Increment TRE instance counter */
+				_quantValue = _quantValue*10 + (fc - '0');
 				
 				if (_has_event_entered != 0) {
 					currentTRECount++; //Increment TRE instance counter only if _has_event_entered was true. This takes care of multiple quant fields
@@ -188,6 +265,11 @@ void mine_pattern(char *inputEM, char *inputTime) {
 				}
 				_eventTime = 0;
 				
+				if (_event_OR_quant != 2) {
+					//Insert into pattern list
+					tempPatternList += "M.";
+					_event_OR_quant = 2; //Do only once
+				}
             } else {
 				is_faulty |= 1;
 				faultReason.push_back("INVLD_NMBR");
@@ -197,6 +279,7 @@ void mine_pattern(char *inputEM, char *inputTime) {
 		action ACCEPT {
 			//Accepting state
 			printf("Partially accepted\n");
+            matched++;
 			
 			//Should have hit exit state [NOTE: NOT A GOOD PLACE TO KEEP EVENT EXIT]
 			//Calculate and insertEventTime for this event
@@ -209,7 +292,6 @@ void mine_pattern(char *inputEM, char *inputTime) {
 				previousEventTime = _eventTime;
 			}
 			
-            cs = foo_start; // Move to start state
 			printTimeEvent();
 			
 			//Reset all counters
@@ -222,6 +304,18 @@ void mine_pattern(char *inputEM, char *inputTime) {
 			if (isFullyAccepted) {
 				printf("Finally accepted\n");
 			}
+			
+			//Prune the previous M.
+			tempPatternList = tempPatternList.substr(0, tempPatternList.size()-3);
+			
+			// Insert into the pattern List
+			insertIntoPatternList(patternMapInternal, tempPatternList, numberList);
+
+			//Reset more counters
+			tempPatternList.clear();
+			numberList = new vector<string>;
+			
+            cs = foo_start; // Move to start state
 		}
 		
         action ERR {
@@ -240,6 +334,10 @@ void mine_pattern(char *inputEM, char *inputTime) {
 			// printf("Resetting state (and move forward)\n");
 			// p++;
 
+			//Reset more counters
+			tempPatternList.clear();
+			numberList = new vector<string>;
+			
             if (currentLength >= totalLength) {
                 // Force break... very bad practice
 				cout << "Trying to break "<< endl;
@@ -264,24 +362,34 @@ void mine_pattern(char *inputEM, char *inputTime) {
 		write exec noend;
 	}%%
 
-	cout << "Finished processing \n\n";
+	if (!MINIMAL_2)	{
+		cout << "Finished processing \n\n";
+	}
+	
+	if (DEBUG || 1) {
+		cout << "Displaying internal pattern map per thread" << endl;
+		#pragma omp critical
+		displayPatternList(patternMapInternal);
+	}
+	
+	if (!MINIMAL_2) {
+		printf("For Thread %d \t", omp_get_thread_num());
+		printf("Pattern matched %d times\n", matched);
+	}
+
 }
 
 
 int main( int argc, char **argv )
 {
-	// char *inp;
-	char *inputEM = (char *)malloc(INT_MAX * sizeof(char *));
-	char *inputTime = (char *)malloc(INT_MAX * sizeof(char *));
-	// if (argc >= 2) { //Invalid for now due to the format we are taking input
-	// 	inputEM = argv[1];
-	// 	inputEM = argv[2];
-	// } else {
+	#pragma omp parallel for num_threads(1)
+	for (int i=0;i<1;i++) {
+		char *inputEM = (char *)malloc(INT_MAX * sizeof(char *));
+		char *inputTime = (char *)malloc(INT_MAX * sizeof(char *));
 		sprintf(inputEM, " a b c 4 5 b d 2 1 "); // 3-2event in TRE - WORKS with larger event identity
-		// sprintf(inputEM, " a11 b32 c31 4 5 b11 d01 2 1 "); // 3-2event in TRE - WORKS
 		sprintf(inputTime, " 1 15 19 20 23 27 30 45 51 "); // 3-2event in TRE - WORKS
-	// }
+		mine_pattern(inputEM, inputTime);
+	}
 	
-	mine_pattern(inputEM, inputTime);
 	return 0;
 }
