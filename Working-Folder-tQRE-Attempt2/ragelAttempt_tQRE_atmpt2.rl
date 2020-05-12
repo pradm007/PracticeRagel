@@ -3,15 +3,15 @@
 #include <omp.h>
 using namespace std;
 #ifndef DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #endif
 
 #ifndef MINIMAL
-#define MINIMAL 0
+#define MINIMAL 1
 #endif
 
 #ifndef MINIMAL_2
-#define MINIMAL_2 0
+#define MINIMAL_2 1
 #endif
 
 #ifndef DISPLAY_MAP
@@ -42,7 +42,9 @@ int checkForFullAcceptance() {
 		for (int j=0; j<2; j++) {
 			int time_diff = processingEventTime[i][1] - processingEventTime[i][0];
 			if (! (inputEventTime[i][0] <= time_diff && time_diff <= inputEventTime[i][1]) ) {
-				cout << "Time diff did not match for TRE"<<i<<endl;
+            	if (DEBUG) {
+					cout << "Time diff did not match for TRE"<<i<<endl;
+				}
 				return 0; // ERROR IN SCOPE
 			}
 		}
@@ -53,7 +55,9 @@ int checkForFullAcceptance() {
 		for (int j=0; j<2; j++) {
 			int time_diff = processingEventTime[i+1][0] - processingEventTime[i][1];
 			if (! (inputQuantTime[i][0] <= time_diff && time_diff <= inputQuantTime[i][1]) ) {
-				cout << "Time diff did not match among TRE"<<i<< " and TRE"<<(i+1)<<endl;
+				if (DEBUG) {
+					cout << "Time diff did not match among TRE"<<i<< " and TRE"<<(i+1)<<endl;
+				}
 				return 0; // ERROR IN SCOPE
 			}
 		}
@@ -174,13 +178,14 @@ void stringToStringArray(char *char_input, int isTimeOrEM=0) {
 }
 
 void printTimeEvent() {
-	
-	cout << "Processing Event Time --------" << endl;
-	for (int i=0; i<eventTRE_perInstance; i++) {
-		for (int j=0;j<2;j++) {
-			cout << processingEventTime[i][j] << " ";
+	if (DEBUG) {
+		cout << "Processing Event Time --------" << endl;
+		for (int i=0; i<eventTRE_perInstance; i++) {
+			for (int j=0;j<2;j++) {
+				cout << processingEventTime[i][j] << " ";
+			}
+			cout << endl;
 		}
-		cout << endl;
 	}
 }
 
@@ -209,7 +214,9 @@ void mine_pattern(char *inputEM, char *inputTime) {
 	stringToStringArray(inputEM, 1);
 	stringToStringArray(inputTime, 2);
 	
-	printf("cs is %d and foo_start is %d\n", cs, foo_start);
+	if (DEBUG) {
+		printf("cs is %d and foo_start is %d\n", cs, foo_start);
+	}
 	
 	int previousEventTime=0;
 	int _eventTime = 0;
@@ -230,7 +237,9 @@ void mine_pattern(char *inputEM, char *inputTime) {
 
         action EVENT {
 			//Invoked for every event-character match
-			printf("\tEvent =%c \n",fc);
+            if (DEBUG) {
+				printf("\tEvent =%c \n",fc);
+			}
 			// tokenCounter++; //Increase everytime there is an E/M
 			_event_OR_quant_stage = 1;
 			
@@ -272,7 +281,9 @@ void mine_pattern(char *inputEM, char *inputTime) {
 		
         action EVENT_IDENTITY {
 			//Will only be invoked in case of events such as a01 or b02 where 01,02 would be the event identity
-			printf("\tEvent Identity =%c \n",fc);
+            if (DEBUG) {
+				printf("\tEvent Identity =%c \n",fc);
+			}
 			_event_OR_quant_stage = 1;
 			
 			
@@ -283,7 +294,9 @@ void mine_pattern(char *inputEM, char *inputTime) {
 		
 		action DELIMITERS {
 			//Invoked for every delimiter-character match
-			printf("\tDelimiter-Character =%c \n",fc);
+            if (DEBUG) {
+				printf("\tDelimiter-Character =%c \n",fc);
+			}
 			tokenCounter++; //Increase everytime there is an E/M.. now is decided based on space
 			
 			if (_event_OR_quant_stage == 2) {
@@ -306,7 +319,9 @@ void mine_pattern(char *inputEM, char *inputTime) {
 		
         action NUM {
             if (fc >= 48 && fc <= 57) {
-                printf("\tNum =%c \n",fc);
+            	if (DEBUG) {
+                	printf("\tNum =%c \n",fc);
+				}
 				// tokenCounter++; //Increase everytime there is an E/M
 				_event_OR_quant_stage = 2;
 				
@@ -331,12 +346,16 @@ void mine_pattern(char *inputEM, char *inputTime) {
 		
 		action ACCEPT {
 			//Accepting state
-			printf("Partially accepted\n");
+            if (DEBUG) {
+				printf("Partially accepted\n");
+			}
             matched++;
 			
 			//Should have hit exit state [NOTE: NOT A GOOD PLACE TO KEEP EVENT EXIT]
 			//Calculate and insertEventTime for this event
-			cout << "_eventTime " << _eventTime << " previousEventTime " << previousEventTime << endl;
+            if (DEBUG) {
+				cout << "_eventTime " << _eventTime << " previousEventTime " << previousEventTime << endl;
+			}
 			if (_eventTime == 0) { // 
 				processingEventTime[currentTRECount][1] = previousEventTime;
 			} else {
@@ -371,8 +390,10 @@ void mine_pattern(char *inputEM, char *inputTime) {
 		}
 		
         action ERR {
-			printf("Error happened.\n");
-			printf("\tcurrent processing character =%c \n",fc);
+            if (DEBUG) {
+				printf("Error happened.\n");
+				printf("\tcurrent processing character =%c \n",fc);
+			}
 			
 			//Reset all counters
 			previousEventTime=0;
@@ -381,9 +402,11 @@ void mine_pattern(char *inputEM, char *inputTime) {
 			_has_event_entered = 0; // Determines if we enter an event stage in TRE. Gets reset immediately at M stage
 			
 			cs = foo_start; // Move to start state
-			printf("cs is %d and foo_start is %d\n", cs, foo_start);
-			printf("Resetting state (and probably would check with first state)\n");
-			// printf("Resetting state (and move forward)\n");
+            if (DEBUG) {
+				printf("cs is %d and foo_start is %d\n", cs, foo_start);
+				printf("Resetting state (and probably would check with first state)\n");
+				// printf("Resetting state (and move forward)\n");
+			}
 			// p++;
 
 			//Reset more counters
@@ -392,7 +415,9 @@ void mine_pattern(char *inputEM, char *inputTime) {
 			
             if (currentLength >= totalLength) {
                 // Force break... very bad practice
-				cout << "Trying to break "<< endl;
+            	if (DEBUG) {
+					cout << "Trying to break "<< endl;
+				}
                 fbreak;
             }
         }
