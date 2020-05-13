@@ -26,8 +26,10 @@ vector<string> faultReason;;
 
 //Input Event Time
 int eventTRE_perInstance = 2;
-int inputEventTime[2][2] = {{0,20},{2,5}};
-int inputQuantTime[1][2] = {{0,10}};
+// int inputEventTime[2][2] = {{0,20},{2,5}};
+// int inputQuantTime[1][2] = {{0,10}};
+int inputEventTime[2][2] = {{0,100},{0,100}};
+int inputQuantTime[1][2] = {{0,100}};
 
 int processingEventTime[2][2] = {{0,0},{0,0}}; // This stores entry and exit for each TRE event scope
 
@@ -376,7 +378,7 @@ void mine_pattern(char *inputEM, char *inputTime) {
 			if (isFullyAccepted) {
 				printf("Finally accepted\n");
 				//Prune the previous M.
-				tempPatternList = tempPatternList.substr(0, tempPatternList.size()-3);
+				tempPatternList = tempPatternList.substr(0, tempPatternList.size()-1);
 				
 				// Insert into the pattern List
 				insertIntoPatternList(patternMapInternal, tempPatternList, numberList);
