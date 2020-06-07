@@ -28,7 +28,6 @@ vector<string> faultReason;;
 int eventTRE_perInstance = 2;
 // int inputEventTime[2][2] = {{0,20},{2,5}};
 // int inputQuantTime[1][2] = {{0,10}};
-int inputEventTime[2][2] = {{0,100},{0,100}};
 int inputQuantTime[1][2] = {{0,100}};
 
 int processingEventTime[2][2] = {{0,0},{0,0}}; // This stores entry and exit for each TRE event scope
@@ -43,7 +42,8 @@ int checkForFullAcceptance() {
 	for (int i=0; i<eventTRE_perInstance; i++) {
 		for (int j=0; j<2; j++) {
 			int time_diff = processingEventTime[i][1] - processingEventTime[i][0];
-			if (! (inputEventTime[i][0] <= time_diff && time_diff <= inputEventTime[i][1]) ) {
+			if (!(inputEventTime[i][0] == -1 && inputEventTime[i][1] == -1) &&
+				! (inputEventTime[i][0] <= time_diff && time_diff <= inputEventTime[i][1]) ){
             	if (DEBUG) {
 					cout << "Time diff did not match for TRE"<<i<<endl;
 				}
@@ -56,7 +56,8 @@ int checkForFullAcceptance() {
 	for (int i=0; i<eventTRE_perInstance-1; i++) {
 		for (int j=0; j<2; j++) {
 			int time_diff = processingEventTime[i+1][0] - processingEventTime[i][1];
-			if (! (inputQuantTime[i][0] <= time_diff && time_diff <= inputQuantTime[i][1]) ) {
+			if (!(inputEventTime[i][0] == -1 && inputEventTime[i][1] == -1) &&
+				! (inputQuantTime[i][0] <= time_diff && time_diff <= inputQuantTime[i][1]) ) {
 				if (DEBUG) {
 					cout << "Time diff did not match among TRE"<<i<< " and TRE"<<(i+1)<<endl;
 				}
