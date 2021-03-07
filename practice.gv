@@ -1,0 +1,15 @@
+digraph foo {
+	rankdir=LR;
+	node [ shape = point ];
+	ENTRY;
+	en_1;
+	node [ shape = circle, height = 0.2 ];
+	node [ fixedsize = true, height = 0.65, shape = doublecircle ];
+	3;
+	node [ shape = circle ];
+	1 -> 2 [ label = "97" ];
+	2 -> 3 [ label = "98 / A" ];
+	3 -> 3 [ label = "98 / A" ];
+	ENTRY -> 1 [ label = "IN" ];
+	en_1 -> 1 [ label = "main" ];
+}
